@@ -24,7 +24,7 @@ namespace IC.WebJob.Areas.Identity.Extensions
                                 })
                             .AddRoles<Role>()
                             .AddErrorDescriber<LocalizedIdentityErrorDescriber>()
-                            .AddEntityFrameworkStores<ICIdentityDbContext>();
+                            .AddEntityFrameworkStores<WebJobDbContext>();
 
 			services.AddScoped<IUserClaimsPrincipalFactory<User>, AppClaimsPrincipalFactory>();
 		}

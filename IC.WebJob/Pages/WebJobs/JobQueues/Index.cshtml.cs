@@ -4,7 +4,7 @@ using IC.Shared;
 using IC.WebJob.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IC.WebJob.Pages.BongDa24hJobs.JobQueues
+namespace IC.WebJob.Pages.WebJobs.JobQueues
 {
     public class IndexModel : BasePageModel
     {

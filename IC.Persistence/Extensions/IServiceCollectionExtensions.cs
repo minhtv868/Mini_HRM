@@ -28,7 +28,7 @@ namespace IC.Persistence.Extensions
         {
             var connectionString = configuration.GetConnectionString("IdentityConnection");
 
-            services.AddDbContext<ICIdentityDbContext>(options =>
+            services.AddDbContext<WebJobDbContext>(options =>
                options.UseSqlServer(connectionString,
                    builder => builder.MigrationsAssembly("IC.WebJob")));
 

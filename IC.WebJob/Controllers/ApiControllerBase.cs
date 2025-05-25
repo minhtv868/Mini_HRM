@@ -1,6 +1,4 @@
-﻿using IC.WebJob.Filters;
-using MediatR;
-using Microsoft.AspNetCore.Http;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IC.WebJob.Controllers

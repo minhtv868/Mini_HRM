@@ -7,7 +7,7 @@ namespace IC.Persistence.Repositories.Identity
 {
     public class IdentityUnitOfWork : UnitOfWork, IIdentityUnitOfWork
     {
-        public IdentityUnitOfWork(ICIdentityDbContext dbContext) : base(dbContext)
+        public IdentityUnitOfWork(WebJobDbContext dbContext) : base(dbContext)
         {
         }
     }

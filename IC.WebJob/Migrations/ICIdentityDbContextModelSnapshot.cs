@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace IC.WebJob.Migrations
 {
-    [DbContext(typeof(ICIdentityDbContext))]
-    partial class ICIdentityDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(WebJobDbContext))]
+    partial class WebJobDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

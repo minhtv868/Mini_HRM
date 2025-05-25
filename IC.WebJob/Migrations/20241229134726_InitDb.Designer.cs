@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace IC.WebJob.Migrations
 {
-    [DbContext(typeof(ICIdentityDbContext))]
+    [DbContext(typeof(WebJobDbContext))]
     [Migration("20241229134726_InitDb")]
     partial class InitDb
     {

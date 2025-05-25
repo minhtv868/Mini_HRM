@@ -8,10 +8,10 @@ namespace IC.Persistence.Repositories.Identity
 {
     public class RoleRepo : IRoleRepo
     {
-        private readonly ICIdentityDbContext _dbContext;
+        private readonly WebJobDbContext _dbContext;
         private readonly ICurrentUserService _currentUserService;
 
-        public RoleRepo(ICIdentityDbContext dbContext, ICurrentUserService currentUserService)
+        public RoleRepo(WebJobDbContext dbContext, ICurrentUserService currentUserService)
         {
             _dbContext = dbContext;
 			_currentUserService = currentUserService;

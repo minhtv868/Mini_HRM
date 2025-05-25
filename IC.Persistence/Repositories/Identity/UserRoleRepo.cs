@@ -7,11 +7,11 @@ namespace IC.Persistence.Repositories.Identity
 {
     public class UserRoleRepo : IUserRoleRepo
     {
-        private readonly ICIdentityDbContext _dbContext;
+        private readonly WebJobDbContext _dbContext;
 
 		public DbSet<IdentityUserRole<int>> DbSet => _dbContext.UserRoles;
 
-		public UserRoleRepo(ICIdentityDbContext dbContext)
+		public UserRoleRepo(WebJobDbContext dbContext)
         {
             _dbContext = dbContext;
         }
