@@ -1,0 +1,414 @@
+﻿/*
+Copyright (c) 2003-2023, CKSource Holding sp. z o.o. All rights reserved.
+CKEditor 4 LTS ("Long Term Support") is available under the terms of the Extended Support Model.
+*/
+
+body {
+    /* Font */
+    /* Emoji fonts are added to visualise them nicely in Internet Explorer. */
+    font-family: sans-serif, Arial, Verdana, "Trebuchet MS", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 12px;
+    /* Text color */
+    color: #333;
+    /* Remove the background color to make it transparent. */
+    background-color: #fff;
+    margin: 20px;
+}
+
+.cke_editable {
+    font-size: 17px;
+    line-height: 1.6;
+    /* Fix for missing scrollbars with RTL texts. (#10488) */
+    word-wrap: break-word;
+    background-color: rgb(251, 243, 228) !important;
+    height: auto;
+    min-height: auto;
+}
+
+    .cke_editable img, .cke_editable table {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    .cke_editable figurecaption {
+        font-size: 11px !important;
+        color: #666666 !important;
+        text-align: left;
+        float: left;
+    }
+
+    .cke_editable a {
+        font-size: 17px !important;
+        color: #0782C1 !important;
+    }
+    /*.cke_editable h2 {
+	font-size: 26px !important;
+	color: #d8293a !important;
+}
+.cke_editable h3 {
+	font-size: 22px !important;
+	color: #666666 !important;
+}
+.cke_editable h4 {
+	font-size: 18px !important;
+}*/
+    .cke_editable .heading1 {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+    .cke_editable .heading2 {
+        font-size: 22px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+    .cke_editable .heading3 {
+        font-size: 20px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+    .cke_editable .heading4 {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+    .cke_editable .heading5 {
+        font-size: 16px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+    .cke_editable .heading6 {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        color: #2c3e50 !important;
+    }
+
+.details-content.cke_widget_editable {
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border-width: 1px;
+    --tw-border-opacity: 1;
+    border-color: rgb(0 124 112/var(--tw-border-opacity));
+    background-color: rgb(0 124 112/var(--tw-bg-opacity));
+    --tw-bg-opacity: 0.1;
+    padding: 0.5rem 0.5rem;
+}
+
+blockquote {
+    font-style: italic;
+    font-family: Georgia, Times, "Times New Roman", serif;
+    padding: 2px 0;
+    border-style: solid;
+    border-color: #ccc;
+    border-width: 0;
+}
+
+.cke_contents_ltr blockquote {
+    padding-left: 20px;
+    padding-right: 8px;
+    border-left-width: 5px;
+}
+
+.cke_contents_rtl blockquote {
+    padding-left: 8px;
+    padding-right: 20px;
+    border-right-width: 5px;
+}
+
+a {
+    color: #0782C1;
+}
+
+ol, ul, dl {
+    /* IE7: reset rtl list margin. (#7334) */
+    *margin-right: 0px;
+    /* Preserved spaces for list items with text direction different than the list. (#6249,#8049)*/
+    padding: 0 40px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    line-height: 1.2;
+}
+
+hr {
+    border: 0px;
+    border-top: 1px solid #ccc;
+}
+
+img.right {
+    border: 1px solid #ccc;
+    float: right;
+    margin-left: 15px;
+    padding: 5px;
+}
+
+img.left {
+    border: 1px solid #ccc;
+    float: left;
+    margin-right: 15px;
+    padding: 5px;
+}
+
+pre {
+    white-space: pre-wrap; /* CSS 2.1 */
+    word-wrap: break-word; /* IE7 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+.marker {
+    background-color: Yellow;
+}
+
+span[lang] {
+    font-style: italic;
+}
+
+figure {
+    text-align: center;
+    outline: solid 1px #ccc;
+    background: rgba(0,0,0,0.05);
+    padding: 10px;
+    margin: 10px 20px;
+    display: inline-block;
+}
+
+    figure > figcaption {
+        text-align: center;
+        display: block; /* For IE8 */
+    }
+
+a > img {
+    padding: 1px;
+    margin: 1px;
+    border: none;
+    outline: 1px solid #0782C1;
+}
+
+/* Widget Styles */
+.code-featured {
+    border: 5px solid red;
+}
+
+.math-featured {
+    padding: 20px;
+    box-shadow: 0 0 2px rgba(200, 0, 0, 1);
+    background-color: rgba(255, 0, 0, 0.05);
+    margin: 10px;
+}
+
+.image-clean {
+    border: 0;
+    background: none;
+    padding: 0;
+}
+
+    .image-clean > figcaption {
+        font-size: .9em;
+        text-align: right;
+    }
+
+.image-grayscale {
+    background-color: white;
+    color: #666;
+}
+
+    .image-grayscale img, img.image-grayscale {
+        filter: grayscale(100%);
+    }
+
+.embed-240p {
+    max-width: 426px;
+    max-height: 240px;
+    margin: 0 auto;
+}
+
+.embed-360p {
+    max-width: 640px;
+    max-height: 360px;
+    margin: 0 auto;
+}
+
+.embed-480p {
+    max-width: 854px;
+    max-height: 480px;
+    margin: 0 auto;
+}
+
+.embed-720p {
+    max-width: 1280px;
+    max-height: 720px;
+    margin: 0 auto;
+}
+
+.embed-1080p {
+    max-width: 1920px;
+    max-height: 1080px;
+    margin: 0 auto;
+}
+/* Bengin */
+.block-photo {
+    margin: 16px 0
+}
+
+.div-photo {
+    display: grid;
+    grid-column-gap: 1px;
+    grid-row-gap: 1px;
+    margin: 1px 0;
+}
+
+.div-photo-grid2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.div-photo-grid3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.div-photo-grid4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.thumb-photo {
+    display: block;
+    overflow: hidden;
+    height: 0;
+    position: relative;
+    width: 100%;
+    background: #f2f2f2;
+    padding-bottom: 56.5%;
+}
+
+    .thumb-photo img {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100% !important;
+        -o-object-position: center;
+        object-position: center;
+        -o-object-fit: cover;
+        object-fit: cover;
+    }
+
+    .thumb-photo.thumb-photo-1x1 {
+        padding-bottom: 100%;
+    }
+
+    .thumb-photo.thumb-photo-1x2 {
+        padding-bottom: 200%;
+    }
+
+.flex-photo {
+    display: flex;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+}
+
+.col-photo-1 {
+    width: 66%;
+    padding-right: 1px
+}
+
+.col-photo-2 {
+    width: 33%;
+}
+
+    .col-photo-2 figure {
+        margin-bottom: 1px;
+        padding-left: 1px;
+    }
+
+        .col-photo-2 figure:last-child {
+            margin-bottom: 0;
+        }
+
+.more-photo {
+    transition: .5s ease;
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    font-size: 32px;
+    font-weight: bold;
+    color: #fff;
+    position: absolute;
+    top: 50%;
+    z-index: 9;
+    left: 50%;
+    text-align: center;
+    transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translateX(-50%) translateY(-50%);
+    -ms-transform: translateX(-50%) translateY(-50%);
+}
+
+.block-photo figure, figcaption, caption {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.block-photo .cke_widget_wrapper {
+    position: unset !important;
+}
+/* End */
+.image.cke_widget_element {
+    padding: 0;
+    margin: 0;
+    outline: none;
+    background: none;
+}
+
+    .image.cke_widget_element img {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 10px;
+    }
+
+    .image.cke_widget_element figcaption {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+        padding-bottom: 8px;
+        font-weight: 300;
+        text-align: left;
+        position: relative;
+    }
+
+        .image.cke_widget_element figcaption::before {
+            bottom: 0;
+            position: absolute;
+            left: 0;
+            width: 170px;
+            height: 1px;
+            background: #ddd;
+            content: "";
+        }
+
+.block-photo figure {
+    display: unset !important;
+}
+
+.cke_ltr.cke_button__templates_icon {
+    background-image: url('/vendors/ckeditor/plugins/templates/icons/templates.png') !important;
+    background-position: 0 0px;
+    background-size: 16px;
+}
+
+.block-photo figcaption {
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    font-weight: 300;
+}

@@ -1,0 +1,87 @@
+﻿@model PagingInput
+@if (Model.TotalPages > 0)
+{
+	@inject IHttpContextAccessor _httpContextAccessor
+
+	var queryParamsFilteredList = _httpContextAccessor.HttpContext?.Request.Query.ToList().Where(filterKvp => !filterKvp.Key.ToLower().Trim().Equals("handler"));
+
+	var filteredQueryString = QueryString.Create(queryParamsFilteredList).ToString();
+
+	var currentUrl = string.Concat(_httpContextAccessor.HttpContext?.Request.Path, filteredQueryString);
+
+	int start = 1, linkLimit = 3,
+		end = Model.TotalPages;
+
+	if (Model.TotalPages > linkLimit)
+	{
+		var middle = (int)Math.Ceiling(linkLimit / 2d) - 1;
+		var below = Model.Page - middle;
+		var above = Model.Page + middle;
+		if (below < 2)
+		{
+			above = linkLimit;
+			below = 1;
+		}
+		else if (above > (Model.TotalPages - 2))
+		{
+			above = Model.TotalPages;
+			below = Model.TotalPages - linkLimit + 1;
+		}
+		start = below;
+		end = above;
+	}
+	<div class="card-footer">
+		<div class="d-flex align-items-center justify-content-center">
+			@if (Model.Page > 1)
+			{
+				<a href="@currentUrl.PaginationLink(Model.Page-1)" title="Trang @(Model.Page-1)" class="btn btn-falcon-default btn-sm me-2">
+					<span class="fas fa-chevron-left"></span>
+				</a>
+			}
+			@if (start > 1)
+			{
+				<a href="@currentUrl.PaginationLink(1)" title="Trang 1" class="btn btn-sm btn-falcon-default me-2">1</a>
+				if (start > 3)
+				{
+					<a href="@currentUrl.PaginationLink(1)" title="Trang 2" class="btn btn-sm btn-falcon-default me-2">2</a>
+				}
+				if (start > 2)
+				{
+					<span class="btn btn-sm btn-falcon-default me-2">
+						<span class="fas fa-ellipsis-h"></span>
+					</span>
+				}
+			}
+			@for (int index = start; index <= end; index++)
+			{
+				if (index == Model.Page)
+				{
+					<span class="btn btn-sm btn-falcon-default text-primary me-2">@Model.Page.NumberFormat()</span>
+				}
+				else
+				{
+					<a href="@currentUrl.PaginationLink(index)" title="Trang @index" class="btn btn-sm btn-falcon-default me-2">@index.NumberFormat()</a>
+				}
+			}
+			@if (end < Model.TotalPages)
+			{
+				if (end < Model.TotalPages - 1)
+				{
+					<span class="btn btn-sm btn-falcon-default me-2">
+						<span class="fas fa-ellipsis-h"></span>
+					</span>
+				}
+				if (end < Model.TotalPages - 2)
+				{
+					<a href="@currentUrl.PaginationLink(Model.TotalPages)" title="Trang @Model.TotalPages" class="btn btn-sm btn-falcon-default me-2">@Model.TotalPages.NumberFormat()</a>
+				}
+			}
+			@if (Model.Page < Model.TotalPages)
+			{
+				<a href="@currentUrl.PaginationLink(Model.Page + 1)" title="Trang @(Model.Page + 1)" class="btn btn-falcon-default btn-sm">
+					<span class="fas fa-chevron-right"></span>
+				</a>
+			}
+		</div>
+	</div>
+}

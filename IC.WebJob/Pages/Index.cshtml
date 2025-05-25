@@ -1,0 +1,29 @@
+﻿@page 
+@model IndexModel
+<div class="row g-3 mt-1">
+	<div class="col-xxl-6 col-xl-12">
+		<div class="row g-3">
+			<div class="col-12">
+				<div class="card bg-transparent-50 overflow-hidden">
+					<div class="card-header position-relative">
+						<div class="position-relative z-2">
+							<div>
+								<h3 class="text-primary mb-1">@(DateTime.Now.Hour < 12 ? "Good Morning" : (DateTime.Now.Hour < 17 ? "Good Afternoon" : "Good Afternoon")), @User.GetDisplayName()!</h3>
+							</div>
+							<div class="d-flex py-3">
+								<div class="col">
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+@section Scripts{ 
+}
+@if (!string.IsNullOrEmpty(Model.htmlAdsPreview))
+{
+	@Html.Raw(Model.htmlAdsPreview)
+}

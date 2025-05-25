@@ -1,0 +1,35 @@
+# https://hub.docker.com/_/microsoft-dotnet
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /source
+
+# copy csproj and restore as distinct layers
+COPY *.sln .
+COPY IC.WebJob/*.csproj ./IC.WebJob/
+COPY IC.Application/*.csproj ./IC.Application/
+COPY IC.Domain/*.csproj ./IC.Domain/
+COPY IC.Infrastructure/*.csproj ./IC.Infrastructure/
+COPY IC.Persistence/*.csproj ./IC.Persistence/
+COPY IC.Shared/*.csproj ./IC.Shared/
+
+RUN dotnet restore --use-current-runtime  
+
+# copy everything else and build app
+COPY IC.WebJob/. ./IC.WebJob/
+COPY IC.Application/. ./IC.Application/
+COPY IC.Domain/. ./IC.Domain/
+COPY IC.Infrastructure/. ./IC.Infrastructure/
+COPY IC.Persistence/. ./IC.Persistence/
+COPY IC.Shared/. ./IC.Shared/
+
+WORKDIR /source/IC.WebJob
+
+RUN dotnet publish --use-current-runtime --self-contained false --no-restore -o /app
+
+# final stage/image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+ENV TZ="Asia/Bangkok"
+WORKDIR /app
+COPY --from=build /app ./
+COPY --from=build /app/appsettings.beta.json ./appsettings.json
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "IC.WebJob.dll"]

@@ -1,0 +1,31 @@
+﻿@page
+@model IC.WebJob.Pages.BongDa24hJobs.Jobs.IndexModel 
+
+@await Component.InvokeAsync("FunctionFavorite")
+@{
+}
+
+<div class="card mt-2">
+	<div class="card-header pt-1 car-header-padding">
+		<div class="row gx-2 border-bottom border-200 search-title-container">
+			<div class="col search-title-bar">Tìm kiếm</div>
+		</div>
+		<form method="get" class="justify-content-between search-form">
+			<div class="row gx-2 align-items-center mt-1"> 
+				<div class="col-12 mt-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
+					<input class="form-control did-floating-input" asp-for="Query.Keywords" placeholder="Từ khóa" type="search" placeholder="Tìm theo tên job hoặc class type" />
+					<label asp-for="Query.Keywords" class="did-floating-label"></label>
+				</div> 
+				<div class="col-12 mt-3 col-md-6 col-lg-4 col-xl-2">
+					<button class="btn btn-secondary me-1" type="submit">Tìm kiếm</button>
+				</div>
+			</div>
+		</form>
+	</div>
+	<div class="card-body p-0">
+		@Html.AntiForgeryToken()
+		<div class="table-responsive scrollbar">
+			@await Html.PartialAsync("BindData", Tuple.Create(Model.PaginatedResult, Model.PagingInput))
+		</div>
+	</div>
+</div>

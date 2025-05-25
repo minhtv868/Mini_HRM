@@ -1,0 +1,38 @@
+﻿@page
+@model AccessDeniedModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Không có quyền truy cập</title>
+    <script src="~/js/config.js" asp-append-version="true"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="~/css/theme.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/user.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/app.css" rel="stylesheet" asp-append-version="true" />
+</head>
+<body>
+    <main class="main" id="top">
+        <div class="container-fluid" data-layout="container">
+            <div class="row flex-center min-vh-100 py-6 text-center">
+                <div class="col-sm-10 col-md-8 col-lg-6 col-xxl-5">
+                    <a class="d-flex flex-center mb-4" href="/"><img class="me-2" src="~/Images/logo.svg" alt="logo" width="150" /></a>
+                    <div class="card">
+                        <div class="card-body p-4 p-sm-5">
+                            <div class="fw-black lh-1 text-300 fs-error">403</div>
+                            <p class="lead mt-4 text-800 font-sans-serif fw-semi-bold w-md-75 w-xl-100 mx-auto">Bạn không có quyền truy cập chức năng này.</p>
+                            <hr />
+                            <a class="btn btn-primary btn-sm mt-3" href="/"><span class="fas fa-home me-2"></span>Về trang chính</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

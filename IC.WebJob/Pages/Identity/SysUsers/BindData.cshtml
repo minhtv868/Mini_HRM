@@ -1,0 +1,223 @@
+﻿@using IC.WebJob.Helpers;
+@using IC.Application.Features.IdentityFeatures.Users.Queries;
+@model Tuple<PaginatedResult<UserGetPageDto>, PagingInput>
+@{
+    Layout = null;
+}
+<table id="sticky-table" class="main-table table table-striped table-hover mb-0">
+    <thead class="text-black">
+        <tr>
+            <th class="pt-1 pb-1" colspan="8">
+                <div class="row flex-between-center">
+                    <div class="col-auto col-sm-auto d-flex align-items-center pe-0">
+                        <h6 class="mb-0 text-nowrap total-rows fw-semi-bold">Tìm thấy <span class="text-danger">@Model.Item1.TotalCount.NumberFormat()</span> bản ghi</h6>
+                    </div>
+                    <div class="col-auto text-end ps-0 justify-content-end">
+                        <div class="d-flex align-items-center" id="table-replace-element">
+                            <div class="bulk-select-actions d-none">
+                                <form method="post"
+                                      data-ajax="true"
+                                      data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "BulkActions")"
+                                      data-ajax-method="post"
+                                      data-ajax-begin="onBegin(this)"
+                                      data-ajax-success="onSuccessed(this, xhr, true)">
+                                    <div class="d-flex">
+                                        <button name="Query.IsEnabled" value="1"
+                                                class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-info ms-2" type="submit" title="Kích hoạt">
+                                            <i class="fas fa-toggle-on"></i>
+                                            <span class="d-none d-sm-inline-block ms-1">Kích hoạt</span>
+                                        </button>
+                                        <button name="Query.IsEnabled" value="2" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit" title="Bỏ kích hoạt">
+                                            <i class="fas fa-toggle-off"></i>
+                                            <span class="d-none d-sm-inline-block ms-1">Bỏ kích hoạt</span>
+                                        </button>
+                                        <button name="Query.TwoFactorEnabled" value="1" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-info ms-2" type="submit"
+                                                title="Bật xác thực 2 bước">
+                                            <i class="fas fa-lock"></i>
+                                            <span class="d-none d-sm-inline-block ms-1">Bật xác thực 2 bước</span>
+                                        </button>
+                                        <button name="Query.TwoFactorEnabled" value="2" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit"
+                                                title="Tắt xác thực 2 bước">
+                                            <i class="fas fa-lock-open"></i>
+                                            <span class="d-none d-sm-inline-block ms-1">Tắt xác thực 2 bước</span>
+                                        </button>
+                                        <input class="ChkActionIds" type="hidden" name="ChkActionIds" />
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="bulk-select-replace-element d-flex align-items-center">
+                                <button class="btn btn-primary no-focus ms-2" type="button"
+                                        data-modal="modal-lg"
+                                        onclick="return modalGet(this, '@Url.Page(pageName: "Create") ', 'Thêm tài khoản')"
+                                        title="Thêm tài khoản">
+                                    <i class="fas fa-plus"></i>
+                                    <span class="d-none d-sm-inline-block ms-1">Thêm</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </th>
+        </tr>
+        <tr>
+            <th class="fs-0 text-nowrap">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" />
+                </div>
+            </th>
+            <th class="align-middle text-nowrap">Tên đăng nhập & Vai trò</th>
+            <th class="align-middle text-nowrap">Thông tin tài khoản</th>
+            <th class="align-middle text-nowrap text-center" title="Với tính năng Xác minh 2 bước (còn gọi là xác thực hai yếu tố), bạn có thể thêm một lớp bảo mật nữa vào tài khoản của bạn để phòng trường hợp mật khẩu bị đánh cắp. Sau khi thiết lập tính năng Xác minh 2 bước, bạn có thể đăng nhập vào tài khoản bằng: Mật khẩu của bạn, Điện thoại của bạn">Xác thực 2 bước <span class="fa fa-info-circle"></span></th>
+            <th class="align-middle text-nowrap text-center">Kích hoạt</th>
+            <th class="align-middle text-nowrap text-center">Site</th>
+            <th class="align-middle text-nowrap">Nhật ký</th>
+            <th class="align-middle white-space-nowrap pe-3"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Item1.Data != null && Model.Item1.Data.Any())
+        {
+            foreach (var item in Model.Item1.Data)
+            {
+                var isAdmin = item.Roles.Where(x => x.Id == 1 || x.Id == 2).Count() > 0;
+                <tr id="@item.Id" class="align-middle">
+                    <td class="align-middle py-3 text-nowrap">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input row-checkbox" type="checkbox" name="ChkActionIds" value="@item.Id" />
+                        </div>
+                    </td>
+                    <td class="text-nowrap">
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(item.AvatarPath))
+                            {
+                                <div class="avatar avatar-xl">
+                                    <img class="rounded-circle" src="@item.AvatarPath.Replace("\\", "/")?w=160&h=90" onerror="this.src='/img/avatar.png'" alt="@item.FullName" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="avatar avatar-xl">
+                                    <div class="avatar-name rounded-circle"><span>@StringHelper.GetFullnamePrefix(item.FullName)</span></div>
+                                </div>
+                            }
+                            <div class="flex-column ms-2">
+                                <span class="mb-0 fw-semi-bold">@Html.DisplayFor(modelItem => item.UserName)</span>
+                                <div class="flex-row d-flex align-items-start" style="margin-top:3px !important;">
+                                    @if (item.Roles != null && item.Roles.Any())
+                                    {
+                                        foreach (var role in item.Roles)
+                                        {
+                                            <span class="badge rounded-pill badge-subtle-secondary fs--2 py-0 me-2" style="height:16px !important; line-height:14px !important;"> @role.Name</span>
+                                        }
+                                    }
+                                    <a href="javascript:void(0)" style="line-height: 14px !important;"
+                                       onclick="return modalGet(this, '@Url.Page(pageName: "AssignRoles", values: new { Id = @item.Id })', 'Gán vai trò cho tài khoản @item.UserName')"
+                                       title="Gán vai trò cho tài khoản @item.UserName">
+                                        <i class="far fa-edit text-600 hover-opacity fa-xs"></i>
+                                    </a>
+                                </div>
+
+                                
+
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-middle text-nowrap">
+                        <div class="flex-row ms-2">
+                            <span class="mb-0 fw-semi-bold">@Html.DisplayFor(modelItem => item.FullName)</span>
+                            <div class="mb-0 d-flex flex-row gap-2">
+                                @if (!string.IsNullOrEmpty(item.Email))
+                                {
+                                    <small class="mb-0"><a class="link-800" href="mailto:@item.Email"><i class="fas fa-envelope fa-xs text-500"></i> @Html.DisplayFor(modelItem => item.Email)</a> </small>
+                                }
+                                @if (!string.IsNullOrEmpty(item.PhoneNumber))
+                                {
+                                    <small class="mb-0"><a class="link-800" href="tel:@item.PhoneNumber"><i class="fas fa-phone-square text-500 fa-xs"></i> @Html.DisplayFor(modelItem => item.PhoneNumber)</a></small>
+                                }
+                            </div>
+                        </div>
+                    </td>
+                    <td class="align-middle text-nowrap text-center">
+                        <div class="form-check form-switch d-flex justify-content-center">
+                            <input asp-for="@item.TwoFactorEnabled" class="form-check-input" type="checkbox" disabled />
+                        </div>
+                    </td>
+                    <td class="align-middle text-nowrap text-center">
+                        <div class="form-check form-switch d-flex justify-content-center">
+                            <input asp-for="@item.IsEnabled" class="form-check-input" type="checkbox" disabled />
+                        </div>
+                    </td>
+                    <td>
+                        @if (!isAdmin)
+                        {
+                            <a class="fw-semi-bold" href="javascript:void(0)" data-modal="modal-sm" style="color:#5e6e82"
+                               onclick="return modalGet(this, '@Url.Page(pageName:"AssignSites", values: new { userId = item.Id })', 'Cập nhật Site')"
+                               title="Chọn site">site</a>
+                        }
+                    </td>
+                    <td class="align-middle text-nowrap">
+                        <div class="d-flex flex-column">
+                            @if (item.LastTimeLogin.HasValue && item.LastTimeLogin.Value > DateTime.MinValue)
+                            {
+                                <small class="mb-0" title="Thời gian đăng nhập gần nhất">
+                                    <i class="fas fa-sign-in-alt text-500 fa-sm"></i> @item.LastTimeLogin.Value.ToStringFormat()
+                                </small>
+                            }
+                            @if (item.CrDateTime.HasValue && item.CrDateTime.Value > DateTime.MinValue)
+                            {
+                                <small class="mb-0" title="Thời gian tạo">
+                                    <i class="fas fa-plus-square text-500 fa-sm"></i> @item.CrDateTime.Value.ToStringFormat()
+                                </small>
+                            }
+                            @if (item.LastTimeChangePass.HasValue && item.LastTimeChangePass.Value > DateTime.MinValue)
+                            {
+                                <small class="mb-0" title="Cập nhật gần nhất">
+                                    <i class="fas fa-edit text-500 fa-sm"></i> @item.LastTimeChangePass.Value.ToStringFormat()
+                                </small>
+                            }
+                        </div>
+                    </td>
+                    <td class="align-middle white-space-nowrap text-end pe-3">
+                        <button class="btn btn-link p-0" type="button"
+                                data-modal="modal-lg"
+                                onclick="return modalGet(this, '@Url.Page(pageName: "Edit", values: new { Id = @item.Id })', 'Cập nhật tài khoản @item.UserName')"
+                                title="Cập nhật tài khoản @item.UserName">
+                            <i class="far fa-edit"></i>
+                        </button>
+                        <button class="btn btn-link p-0 ms-2 text-secondary" type="button"
+                                onclick="return modalGet(this, '@Url.Page(pageName: "ResetPassword", values: new { Id = @item.Id })', 'Đặt lại mật khẩu tài khoản @item.UserName')"
+                                title="Đặt lại mật khẩu tài khoản @item.UserName">
+                            <i class="fas fa-fingerprint"></i>
+                        </button>
+                        @if (item.UserName.ToLower().Trim() != "admin")
+                        {
+                            <a href="javascript:void(0)" class="btn btn-link p-0 ms-2"
+                               data-ajax="true"
+                               data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "Delete", values: new { Id = @item.Id })"
+                               data-ajax-method="post"
+                               data-ajax-begin="setRequestHeader(this, xhr)"
+                               data-ajax-success="onSuccessed(this, xhr)"
+                               data-ajax-confirm="Xác nhận xóa tài khoản @item.UserName"
+                               title="Xóa tài khoản @item.UserName">
+                                <i class="far fa-trash-alt text-danger"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="btn btn-link p-0 ms-2" title="Không thể xóa tài khoản @item.UserName">
+                                <i class="far fa-trash-alt text-500"></i>
+                            </span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr class="align-middle text-warning fs--1 not-found text-center">
+                <td colspan="8">Chưa có dữ liệu</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@await Html.PartialAsync("_PaginationPartial", Model.Item2)

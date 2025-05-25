@@ -1,0 +1,45 @@
+﻿@page
+@using IC.WebJob.Helpers;
+@model IC.WebJob.Pages.Identity.SysFunctions.IndexModel
+@await Component.InvokeAsync("FunctionFavorite")
+<div class="card mt-2">
+	<div class="card-header pt-1 car-header-padding">
+		<div class="row gx-2 border-bottom border-200 search-title-container">
+			<div class="col search-title-bar">Tìm kiếm</div>
+		</div>
+		<form method="get" class="justify-content-between search-form">
+			<div class="row gx-2 align-items-center mt-1">
+				<div class="col-12 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
+					<select asp-for="Query.ParentItemId" asp-items="@(new SelectList(Model.ParentFunctionsList,"Id", "FunctionNameByLevelSelectItemList"))"
+					   class="form-select form-select-submit select-picker did-floating-select">
+						<option value="0" selected>Tất cả</option>
+					</select>
+					<label asp-for="Query.ParentItemId" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-3 did-floating-label-content">
+					<input class="form-control did-floating-input" asp-for="Query.Keywords" asp-placeholder-for="Query.Keywords" type="search" />
+					<label asp-for="Query.Keywords" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 mt-md-0 col-lg-4 col-xl-2">
+					<div class="form-check mt-1 form-switch">
+						<input class="form-check-input form-select-submit" type="checkbox" @(Model.Query.ShowFirstLevelOnly ? "checked" : "") id="Query_ShowFirstLevelOnly" name="Query.ShowFirstLevelOnly" value="true" />
+						<label class="form-check-label fw-normal" asp-for="Query.ShowFirstLevelOnly"></label>
+					</div>
+					@*<div class="form-check mt-1 form-switch">
+						<input class="form-check-input form-select-submit" asp-for="Query.ShowFirstLevelOnly" />
+						<label class="form-check-label fw-normal" asp-for="Query.ShowFirstLevelOnly"></label>
+					</div>*@
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-3">
+					<button class="btn btn-secondary me-1" type="submit">Tìm kiếm</button>
+				</div>
+			</div>
+		</form>
+	</div>
+	<div class="card-body p-0">
+		@Html.AntiForgeryToken()
+		<div class="table-responsive scrollbar">
+			@await Html.PartialAsync("BindData", Tuple.Create(Model.PaginatedResult, Model.PagingInput))
+		</div>
+	</div>
+</div>

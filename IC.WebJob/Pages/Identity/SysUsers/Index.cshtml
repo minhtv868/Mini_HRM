@@ -1,0 +1,44 @@
+﻿@page
+@using IC.Domain.Enums.Identity;
+@using IC.WebJob.Helpers;
+@using IC.Application.Common.DictDataHelpers.Identity;
+@model IC.WebJob.Pages.Identity.Users.IndexModel
+@await Component.InvokeAsync("FunctionFavorite")
+<div class="card mt-2">
+	<div class="card-header pt-1 car-header-padding">
+		<div class="row gx-2 border-bottom border-200 search-title-container">
+			<div class="col search-title-bar">Tìm kiếm</div>
+		</div>
+		<form method="get" class="justify-content-between search-form">
+			<div class="row gx-2 align-items-center mt-1">
+				<div class="col-12 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
+					<select asp-for="Query.IsEnabled" asp-items="Html.GetEnumSelectList<UserIsEnabledEnum>()"
+					   class="form-select form-select-submit did-floating-select">
+						<option value="0" selected>Tất cả</option>
+					</select>
+					<label asp-for="Query.IsEnabled" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 mt-md-0 col-lg-4 col-xl-3 did-floating-label-content">
+					<select asp-for="Query.TwoFactorEnabled" asp-items="@(new SelectList(UserStatusDtoHelper.GetTwoFactorEnabledList(), "StatusId", "StatusName"))"
+					   class="form-select form-select-submit did-floating-select">
+						<option value="0">Tất cả</option>
+					</select>
+					<label asp-for="Query.TwoFactorEnabled" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-3 did-floating-label-content">
+					<input class="form-control did-floating-input" asp-for="Query.Keywords" asp-placeholder-for="Query.Keywords" type="search" />
+					<label asp-for="Query.Keywords" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-3">
+					<button class="btn btn-secondary me-1" type="submit">Tìm kiếm</button>
+				</div>
+			</div>
+		</form>
+	</div>
+	<div class="card-body p-0">
+		@Html.AntiForgeryToken()
+		<div class="table-responsive scrollbar">
+			@await Html.PartialAsync("BindData", Tuple.Create(Model.PaginatedResult, Model.PagingInput))
+		</div>
+	</div>
+</div>

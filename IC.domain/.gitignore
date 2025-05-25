@@ -1,0 +1,25 @@
+# Compiled files
+*.exe
+*.dll
+*.pdb
+
+# NuGet packages
+*.nupkg
+**/packages/
+
+# User-specific files
+*.suo
+*.user
+*.userprefs
+*.usertasks
+*.vscode
+.vs
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+obj/
+bin/
+/bin

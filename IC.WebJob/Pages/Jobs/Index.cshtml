@@ -1,0 +1,58 @@
+﻿@page
+@using IC.Application.Jobs;
+@model IC.WebJob.Pages.Jobs.IndexModel
+@await Component.InvokeAsync("FunctionFavorite")
+<div class="card mt-2">
+	<div class="row gx-2 search-title-container">
+		<p></p>
+	</div>
+	<div class="card-header pt-1 car-header-padding">			
+		<form method="post"
+			  data-ajax="true"
+			  data-ajax-url="@Url.Page(pageName: "Jobs")"
+			  data-ajax-method="post"
+			  data-ajax-begin="onBegin(this)"
+			  data-ajax-success="onSuccessed(this, xhr, false, false)" class="justify-content-between search-form">
+			<div class="row gx-2 align-items-center mt-1">
+				<div class="col-12 col-md-6 col-lg-4 col-xl-1 did-floating-label-content">
+					<select asp-for="JobQueue" class="form-select select-picker did-floating-select" asp-items="@(new SelectList(IcJobHelper.GetJobQueueList(),"JobQueue", "JobQueueDesc"))">
+					</select>
+					<label asp-for="JobQueue" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 col-md-6 col-lg-4 col-xl-5 did-floating-label-content">
+					<select asp-for="JobId" asp-items="@(new SelectList(Model.JobList,"Id", "JobName"))"
+							class="form-select select-picker did-floating-select">
+						<option value="0" selected>Chọn công việc</option>
+					</select>
+					<label asp-for="JobId" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+					<select asp-for="JobScheduleType" asp-items="@(new SelectList(IcJobHelper.GetJobScheduleList(),"JobScheduleType", "JobScheduleName"))"
+							class="form-select select-picker did-floating-select">
+						<option value="0" selected>Chọn lịch thực hiện</option>
+					</select>
+					<label asp-for="JobScheduleType" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-2 did-floating-label-content">
+					<input asp-for="JobScheduleTimeNumber" class="form-control did-floating-input" />
+					<label asp-for="JobScheduleTimeNumber" class="did-floating-label"></label>
+				</div>
+				<div class="col-12 mt-3 col-md-6 col-lg-4 mt-lg-0 col-xl-2">
+					<button class="btn btn-primary">Tạo job</button>
+				</div>
+			</div>
+		</form>
+	</div>	
+	<div class="card-body p-0">
+		<div class="row gx-2 border-bottom border-200 search-title-container">
+			<p></p>
+		</div>
+		@Html.AntiForgeryToken()
+		<div class="table-responsive scrollbar">
+			@await Html.PartialAsync("BindData", Model.RecurringJobs)
+		</div>
+	</div>
+</div>
+
+
+

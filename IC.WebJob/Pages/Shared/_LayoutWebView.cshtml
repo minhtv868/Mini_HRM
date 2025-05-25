@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CMS Quản lý Job bongda34h.vn</title>
+    <script src="~/js/config.js" asp-append-version="true"></script>
+    <script src="~/vendors/simplebar/simplebar.min.js" asp-append-version="true"></script>
+    <link href="~/vendors/simplebar/simplebar.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link href="~/css/theme.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/user.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/vendors/select2/select2.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/vendors/select2-bootstrap-5-theme/select2-bootstrap-5-theme.min.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="~/vendors/flatpickr/flatpickr.min.css" asp-append-version="true" />
+    <link href="~/vendors/table/bootstrap-table.min.css" rel="stylesheet" asp-append-version="true">
+    <link href="~/vendors/table/bootstrap-table-sticky-header.css" rel="stylesheet" asp-append-version="true">
+    <link href="~/vendors/jquery-confirm/jquery-confirm.min.css" rel="stylesheet" />
+    <link href="~/css/app.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/article.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/popup-chi-dan.css" rel="stylesheet" asp-append-version="true" />
+    @*	xem ảnh*@
+    <link href="~/vendors/glightbox/glightbox.min.css" rel="stylesheet" />
+    <script src="~/vendors/glightbox/glightbox.min.js"></script>
+
+    @await RenderSectionAsync("HeadSection", required: false)
+</head>
+<body>
+    <main class="main" id="top">
+        <div class="container-fluid" data-layout="container">
+            @await Component.InvokeAsync("VerticalNavbar")
+            <div class="content">
+                @await Component.InvokeAsync("TopNavbar")
+                @RenderBody()
+                <footer class="footer">
+                    <div class="row g-0 justify-content-between fs--1 mt-4 mb-3">
+                        <div class="col-12 col-sm-auto text-center">
+                            <p class="mb-0 text-600">© 2024 - ICSOFT DEV TEAM</p>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </main>
+    <div class="modal fade" id="modalPopup" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body mt-0">
+                    <div class="card-body">
+                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
+                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalDataPopup" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-3" aria-hidden="true" style="z-index:10011">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chọn dữ liệu</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body modal-dialog-scrollable mt-0">
+                    <div class="card-body">
+                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
+                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalDataChildPopup" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-4" aria-hidden="true" style="z-index:11111">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chọn dữ liệu</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body modal-dialog-scrollable mt-0">
+                    <div class="card-body">
+                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
+                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalSelectImgPopup" data-bs-backdrop="static" data-keyboard="false" tabindex="-2" aria-hidden="true" style="z-index:10011">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chọn ảnh</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body mt-0">
+                    <div class="card-body">
+                        <div class=" align-items-center gy-2 mb-2">
+                            <div style=" display:flex">
+                                <div class=" did-floating-label-content" style="margin-right:1%;flex-grow:1">
+                                    <input class="form-control did-floating-input" type="search" placeholder="Từ khóa" id="selectImg_Keywords">
+                                    <label class="did-floating-label">Từ khóa</label>
+
+                                </div>
+                                <button class="btn btn-primary btn-sm me-1 " type="button" onclick=" bindDataSelectImg()">Lọc</button>
+
+                                <button class="btn btn-outline-primary px-2  " title="Thêm ảnh" onclick="$('#SelectImgAddNew').trigger('click')" id="SelectImgAddNewBtn">
+                                    <i class="fa fa-plus-square"></i>
+                                </button>
+                                <input type="file" id="SelectImgAddNew" accept="image/png, image/gif, image/jpeg, image/jpg, image/webp, image/bmp " class="d-none" multiple />
+                                <div>
+                                    <input class="form-check-input form-select-submit" style="margin-top: 16px; margin-left: 30px;" type="checkbox" id="selectImg_Mine" onchange="bindDataSelectImg()" />
+                                    <label class="form-check-label" style="margin-top: 13px;margin-bottom: 0;">Của tôi</label>
+                                </div>
+
+                            </div>
+
+
+                            <div class="progress-stacked rounded-2 d-none mt-1" id="progressAddNewImg" style="height: 16px;">
+                                <div class="progress" id="progressBarAddNewImg" style="width: 0%;" role="progressbar">
+                                    <div class="progress-bar bg-progress-gradient border-end border-white border-2"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="bindListSelectImg"> </div>
+
+                        <input class="d-none" id="SelectImgComponentKey" />
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+        <div class="toast fade" id="toastMsg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-primary text-white">
+                <strong class="me-auto">Thông báo</strong>
+                <small class="text-white">
+                    tự đóng sau 5 giây
+                </small>
+                <button class="btn-close btn-close-white" type="button" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body"></div>
+        </div>
+    </div>
+    <form method="post"
+          data-ajax="true"
+          data-ajax-url="/BongDa24hDocs/DocFiles/Create"
+          data-ajax-method="post"
+          data-ajax-progress="#progress"
+          data-ajax-begin="onBegin(this)"
+          data-ajax-success="onUploadFileSuccessed(this, xhr)"
+          enctype="multipart/form-data">
+        <input type="file" class="form-control form-select-submit d-none" multiple id="FileUploads" name="FileUploads" />
+        <input type="hidden" id="FileCommand_DocId" name="FileCommand.DocId" />
+        <input type="hidden" id="FileCommand_SiteId" name="FileCommand.SiteId" />
+        <input type="hidden" id="FileCommand_DataSourceId" name="FileCommand.DataSourceId" />
+        <input type="hidden" id="Command_IsFileStandard" name="FileCommand.IsFileStandard" />
+    </form>
+
+    <style>
+        .custom-tooltip .tooltip-inner {
+            background: var(--falcon-danger);
+            color: var(--falcon-light);
+        }
+
+        .custom-tooltip .tooltip-arrow::before {
+            border-right-color: var(--falcon-danger) !important;
+        }
+
+        @@media (max-width: 1279px) {
+            .custom-tooltip {
+                display: none !important;
+            }
+        }
+    </style>
+    <div class="position-fixed start-0 p-3" style="z-index: 9999; bottom:50px;">
+        <div class="toast fade" id="toastMsgSystem" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+            <div class="toast-header bg-primary text-white">
+                <span class="pe-2"><i class="far fa-bell"></i></span>
+
+                <strong class="me-auto">Thông báo hệ thống</strong>
+
+                <button class="btn-close btn-close-white" type="button"></button>
+            </div>
+            <div class="toast-body">
+            </div>
+        </div>
+        <div class="card-body align-items-center py-md-2 px-2 py-1" id="minNotifyMsgSystem" style="display: none;">
+            <div class="bg-primary-subtle position-relative rounded-start btn-link" style="height:34px;width:28px"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="right"
+                 data-bs-custom-class="custom-tooltip">
+                <div class="settings-popover">
+                    <span class="ripple">
+                        <span class="fa-spin position-absolute all-0 d-flex flex-center">
+                            <span class="icon-spin position-absolute all-0 d-flex flex-center text-danger">
+                                <span class="fas fa-bell"></span>
+                            </span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="~/vendors/popper/popper.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/bootstrap/bootstrap.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/anchorjs/anchor.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/is/is.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/fontawesome/all.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/lodash/lodash.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/list.js/list.min.js" asp-append-version="true"></script>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/vendors/select2/select2.full.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/flatpickr/flatpickr.js" asp-append-version="true"></script>
+    <script src="~/vendors/flatpickr/flatpickr_vn.js" asp-append-version="true"></script>
+    <script src="~/lib/jQuery.maxlength.js" asp-append-version="true"></script>
+    <script src="~/vendors/ckeditor/ckeditor.js?v=2" asp-append-version="true"></script>
+    <script src="~/vendors/jquery-confirm/jquery-confirm.min.js"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/docitem.js" asp-append-version="true"></script>
+    <script src="~/vendors/table/bootstrap-table.min.js" asp-append-version="true"></script>
+    <script src="~/vendors/table/bootstrap-table-sticky-header.min.js" asp-append-version="true"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

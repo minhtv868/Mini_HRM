@@ -1,0 +1,12 @@
+[submodule "IC.Domain"]
+	path = IC.Domain
+	url = ../../bongda/ic.domain.git
+[submodule "IC.Shared"]
+	path = IC.Shared
+	url = ../../bongda/ic.shared.git
+[submodule "OpenXmlPowerTools"]
+	path = OpenXmlPowerTools
+	url = ../../luat/openxmlpowertools.git
+[submodule "IC.ExtractWordLib"]
+	path = IC.ExtractWordLib
+	url = ../../luat/ic.extractwordlib.git

@@ -1,0 +1,105 @@
+﻿@page
+@model LoginModel
+@{
+	Layout = Model.Modal ? null : "/Areas/Identity/Pages/Account/_LayoutLogin.cshtml";
+	ViewData["Title"] = "Đăng nhập hệ thống";
+}
+@if (Model.Modal)
+{
+	<div class="modal-header">
+		<h5 class="modal-title">Đăng nhập</h5>
+		<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+	</div>
+	<div class="modal-body mt-0">
+		<div class="col-sm-12">
+			<a class="d-flex flex-center mb-4" href="#" title="ICAds" target="_blank">
+				<img class="me-2" src="~/Images/logo.svg" alt="ICAds" width="200" />
+			</a>
+			<div class="card">
+				<div class="card-body p-4 p-sm-5">
+					<div class="row flex-between-center mb-2">
+						<div class="col-auto">
+							<h5>Đăng nhập hệ thống</h5>
+						</div>
+					</div>
+					<form method="post"
+					   data-ajax="true"
+					   data-ajax-url="@Url.Page(pageName: "Login")"
+					   data-ajax-method="post"
+					   data-ajax-begin="onBegin(this)"
+					   data-ajax-success="onLoginSuccessed(this, xhr)">
+						<div class="mb-3">
+							<input asp-for="Input.UserNameOrEmail" placeholder="Tên truy cập/Email" class="form-control" autocomplete="username" aria-required="true" />
+							<span asp-validation-for="Input.UserNameOrEmail" class="text-danger"></span>
+						</div>
+						<div class="mb-3">
+							<div class="input-group">
+								<input asp-for="Input.Password" placeholder="Mật khẩu" class="form-control" autocomplete="current-password" aria-required="true" />
+							</div>
+							<span asp-validation-for="Input.Password" class="text-danger"></span>
+						</div>
+						<div class="row flex-between-center">
+							<div class="col-auto">
+								<div class="form-check mb-0">
+									<input class="form-check-input" asp-for="Input.RememberMe" />
+									<label class="form-check-label mb-0" asp-for="Input.RememberMe">@Html.DisplayNameFor(m => m.Input.RememberMe)</label>
+								</div>
+							</div>
+						</div>
+						<div class="mb-3"><button class="btn btn-primary d-block w-100 mt-3" type="submit">Đăng nhập</button></div>
+
+						<div class="mb-3"><a href="/signin-gitlab">Đăng nhập qua GitLab</a></div>
+						
+						<input type="hidden" asp-for="ReturnUrl" />
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+else
+{
+	<div class="row flex-center min-vh-100">
+		<div class="col-12 col-sm-10 col-md-6 col-lg-5 col-xl-4 col-xxl-3">
+			<a class="d-flex flex-center mb-4" href="#" title="ICAds" target="_blank">
+				<img class="me-2" src="~/Images/logo.svg" alt="ICAds" width="200" />
+			</a>
+			<div class="card">
+				<div class="card-body p-4 p-sm-5">
+					<div class="row flex-between-center mb-2">
+						<div class="col-auto">
+							<h5>Đăng nhập hệ thống</h5>
+						</div>
+					</div>
+					<form method="post"
+					   data-ajax="true"
+					   data-ajax-url="@Url.Page(pageName: "Login")"
+					   data-ajax-method="post"
+					   data-ajax-begin="onBegin(this)"
+					   data-ajax-success="onLoginSuccessed(this, xhr)">
+						<div class="mb-3">
+							<input asp-for="Input.UserNameOrEmail" placeholder="Tên truy cập/Email" class="form-control" autocomplete="username" aria-required="true" />
+							<span asp-validation-for="Input.UserNameOrEmail" class="text-danger"></span>
+						</div>
+						<div class="mb-3">
+							<div class="input-group">
+								<input asp-for="Input.Password" placeholder="Mật khẩu" class="form-control" autocomplete="current-password" aria-required="true" />
+							</div>
+							<span asp-validation-for="Input.Password" class="text-danger"></span>
+						</div>
+						<div class="row flex-between-center">
+							<div class="col-auto">
+								<div class="form-check mb-0">
+									<input class="form-check-input" asp-for="Input.RememberMe" />
+									<label class="form-check-label mb-0" asp-for="Input.RememberMe">@Html.DisplayNameFor(m => m.Input.RememberMe)</label>
+								</div>
+							</div>
+						</div>
+						<div class="mb-3"><button class="btn btn-primary d-block w-100 mt-3" type="submit">Đăng nhập</button></div>						
+						<input type="hidden" asp-for="ReturnUrl" />
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+}
