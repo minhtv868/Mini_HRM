@@ -51,7 +51,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Jobs\Crawls\" />
     <Folder Include="Jobs\Translates\" />
     <Folder Include="Jobs\Parses\" />
   </ItemGroup>

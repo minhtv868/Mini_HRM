@@ -1,0 +1,61 @@
+﻿using IC.Application.Extensions;
+using IC.Application.Settings;
+using IC.Infrastructure.Extensions;
+using IC.Persistence.Extensions;
+using IC.WebJob.Areas.Identity.Extensions;
+using IC.WebJob.Helpers.Extensions;
+using WebAPI.Filters;
+using WebAPI.Utils;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddApplicationLayer(builder.Configuration);
+builder.Services.AddInfrastructureLayer();
+builder.Services.AddPersistenceLayer(builder.Configuration);
+builder.Services.AddIdentityService();
+builder.Services.AddHangfireService(builder.Configuration);
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(AppSettings.SectionName));
+builder.Services.AddHttpClient<HttpClientUtil>();
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+//if (builder.Environment.IsDevelopment())
+//{
+//    builder.Services.AddSwaggerGen(c =>
+//    {
+//        c.SwaggerDoc("v2", new OpenApiInfo { Title = "Luat Web API", Version = "v2" });
+
+//    });
+//}
+builder.Services.AddCors();
+builder.Services.AddHealthChecks();
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    //  builder.Services.AddSwaggerGenNewtonsoftSupport();
+}
+else
+{
+    app.UseMiddleware<ApiKeyMiddleware>();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+app.UseCors(builder =>
+{
+    builder
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader();
+});
+
+app.Run();
