@@ -1,0 +1,89 @@
+﻿@page
+@model WebJob.Pages.Identity.SysFunctions.EditModel
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "Edit")"
+      data-ajax-method="post" data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr)">
+    <div class="modal-header">
+        <h5 class="modal-title">Cập nhật chức năng</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body mt-0">
+        <div class="row gx-2">
+            <div class="col-12 col-sm-6 mb-3 did-floating-label-content">
+                <select asp-for="Command.ParentItemId" asp-items="@(new SelectList(Model.AllSysFunctionsList,"Id", "FunctionNameByLevelSelectItemList"))"
+                        class="form-select select-picker-modal did-floating-select"
+                        onclick="this.setAttribute('value', this.value); return false;"
+                        onchange="this.setAttribute('value', this.value); return false;">
+                    <option value="0">...</option>
+                </select>
+                <label asp-for="Command.ParentItemId" class="did-floating-label"></label>
+            </div>
+            <div class="col-12 col-sm-6 mb-3 did-floating-label-content">
+                <input asp-for="Command.FunctionName" asp-placeholder-for="Command.FunctionName" class="form-control did-floating-input" />
+                <label-required asp-for="Command.FunctionName" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.FunctionName" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-6 mb-3 did-floating-label-content">
+                <input asp-for="Command.FunctionDesc" asp-placeholder-for="Command.FunctionDesc" class="form-control did-floating-input" />
+                <label asp-for="Command.FunctionDesc" class="did-floating-label"></label>
+                <span asp-validation-for="Command.FunctionDesc" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-6 mb-3 did-floating-label-content">
+                <input asp-for="Command.Url" asp-placeholder-for="Command.Url" class="form-control did-floating-input" />
+                <label asp-for="Command.Url" class="did-floating-label"></label>
+                <span asp-validation-for="Command.Url" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-6 mb-3 did-floating-label-content">
+                <input asp-for="Command.IconPath" asp-placeholder-for="Command.IconPath" class="form-control did-floating-input" />
+                <label asp-for="Command.IconPath" class="did-floating-label"></label>
+                <span asp-validation-for="Command.IconPath" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-6 mb-3">
+                <div clas="form-group">
+                    <div class="form-check mt-2 form-switch form-check-inline">
+                        <input class="form-check-input" asp-for="Command.IsShow" />
+                        <label class="form-check-label" asp-for="Command.IsShow"></label>
+                    </div>
+                    <div class="form-check form-switch form-check-inline">
+                        <input class="form-check-input" asp-for="Command.IsEnable" />
+                        <label class="form-check-label" asp-for="Command.IsEnable"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 mb-3">
+                <label class="control-label">Vai trò</label>
+                <div clas="form-group">
+                    @foreach (var item in Model.AllRolesList)
+                    {
+                        <div class="form-check form-check-inline">
+                            @if (Model.Command.RolesByFunctionList != null && Model.Command.RolesByFunctionList.Any() && Model.Command.RolesByFunctionList.Exists(x => x == item.Id))
+                            {
+                                <input class="form-check-input" id="Command.SelectedRoles.@item.Id" name="Command.SelectedRoles" type="checkbox" value="@item.Id" checked />
+                            }
+                            else
+                            {
+                                <input class="form-check-input" id="Command.SelectedRoles.@item.Id" name="Command.SelectedRoles" type="checkbox" value="@item.Id" />
+                            }
+                            <label class="form-check-label" for="Command.SelectedRoles.@item.Id">@item.Name</label>
+                        </div>
+                    }
+                </div>
+            </div>
+            <input type="hidden" asp-for="Command.Id" />
+            <input type="hidden" asp-for="Command.CurrentParentId" />
+            <input type="hidden" asp-for="Command.DisplayOrder" />
+            <input type="hidden" asp-for="Command.TreeOrder" />
+            <input type="hidden" asp-for="Command.TreeLevel" />
+            <input type="hidden" asp-for="Command.HasChild" />
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>

@@ -1,0 +1,31 @@
+﻿@using Web.Application.Features.IdentityFeatures.SysFunctions.Queries;
+@model SysFunctionGetByUrlDto
+<div class="row g-0 page-name-bar mt-2">
+	<div class="col-auto page-name">
+		@Model.FunctionName
+	</div>
+	<div class="col">
+		@if (Model.FunctionByUser > 0)
+		{
+			<a href="javascript:void(0)" class="btn p-1 btn-favarite active" title="Bỏ chức năng ưa thích"
+			   data-ajax="true"
+			   data-ajax-url="@Url.Page(pageName: "/Index", pageHandler: "FavoriteFunction", values: new { sysFunctionId = Model.Id })"
+			   data-ajax-method="post"
+			   data-ajax-begin="setRequestHeader(this, xhr)"
+			   data-ajax-success="onFavoriteFunctionSuccessed(this, xhr)">
+				<span class="fas fa-star"></span>
+			</a>
+		}
+		else
+		{	
+			<a href="javascript:void(0)" class="btn p-1 btn-favarite" title="Thêm chức năng ưa thích"
+			   data-ajax="true"
+			   data-ajax-url="@Url.Page(pageName: "/Index", pageHandler: "FavoriteFunction", values: new { sysFunctionId = Model.Id })"
+			   data-ajax-method="post"
+			   data-ajax-begin="setRequestHeader(this, xhr)"
+			   data-ajax-success="onFavoriteFunctionSuccessed(this, xhr)">
+				<span class="fas fa-star"></span>
+			</a>
+		}
+	</div>
+</div>

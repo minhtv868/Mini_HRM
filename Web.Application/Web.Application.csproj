@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Common\Helpers\ExtractWord\**" />
+    <Compile Remove="Features\Clubs\**" />
+    <Compile Remove="Features\Stadiums\**" />
+    <EmbeddedResource Remove="Common\Helpers\ExtractWord\**" />
+    <EmbeddedResource Remove="Features\Clubs\**" />
+    <EmbeddedResource Remove="Features\Stadiums\**" />
+    <None Remove="Common\Helpers\ExtractWord\**" />
+    <None Remove="Features\Clubs\**" />
+    <None Remove="Features\Stadiums\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1">
+      <TreatAsUsed>true</TreatAsUsed>
+    </PackageReference>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.400.9" />
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.400.9" />
+    <PackageReference Include="DiffMatchPatch" Version="2.0.0" />
+    <PackageReference Include="Elasticsearch.Net" Version="7.17.5" />
+    <PackageReference Include="File.TypeChecker" Version="4.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.5.2">
+      <TreatAsUsed>true</TreatAsUsed>
+    </PackageReference>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
+    <PackageReference Include="MediatR" Version="12.0.1">
+      <TreatAsUsed>true</TreatAsUsed>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.5" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="NEST" Version="7.17.5" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.3.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Web.Domain\Web.Domain.csproj" />
+    <ProjectReference Include="..\Web.Shared\Web.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Jobs\Translates\" />
+    <Folder Include="Jobs\Parses\" />
+  </ItemGroup>
+
+</Project>

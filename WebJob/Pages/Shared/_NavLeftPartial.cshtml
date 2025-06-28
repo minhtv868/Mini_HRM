@@ -1,0 +1,93 @@
+﻿@using Web.Domain.Entities.Identity;
+@using Microsoft.AspNetCore.Identity
+@using WebJob.Helpers
+@using Web.Application.Features.IdentityFeatures.SysFunctions.Queries;
+@using MediatR;
+@inject IMediator mediator
+@inject IHttpContextAccessor httpContextAccessor
+@inject UserManager<User> UserManager
+@{
+    var currentUser = await UserManager.GetUserAsync(User); 
+    var resultGetAllSysFunction = await mediator.Send(new SysFunctionGetMenuByUserQuery(currentUser.Id));
+ 
+}
+<nav class="navbar navbar-light navbar-vertical navbar-expand-xl navbar-inverted">
+    <div class="d-flex align-items-center">
+        <div class="toggle-icon-wrapper">
+            <button class="btn navbar-toggler-humburger-icon navbar-vertical-toggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Toggle Navigation"><span class="navbar-toggle-icon"><span class="toggle-line"></span></span></button>
+        </div><a class="navbar-brand" href="index.html">
+            <div class="d-flex align-items-center py-3"> 
+                <img class="me-2" src="@($"/Images/Logo-VOH-09.svg")" alt="ICAds" width="40" />
+            </div>
+        </a>
+    </div>
+    <div class="collapse navbar-collapse" id="navbarVerticalCollapse">
+        <div class="navbar-vertical-content scrollbar">
+            <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
+                @if (resultGetAllSysFunction.Succeeded && resultGetAllSysFunction.Data != null && resultGetAllSysFunction.Data.Any())
+                {
+                    var requestPath = httpContextAccessor.HttpContext.Request.Path.Value;
+                    var lSysFunctionGetMenuByUserDtos = resultGetAllSysFunction.Data;
+                    MenuHelper.SetMenuActive(resultGetAllSysFunction.Data, requestPath);
+                    var lMenus = MenuHelper.GetItemsByParentId(lSysFunctionGetMenuByUserDtos, 0);
+                    @foreach (var item in lMenus)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link dropdown-indicator collapsed" href="#menutop@(item.Id)" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="menutop@(item.Id)">
+                                <div class="d-flex align-items-center">
+                                    <span class="nav-link-icon">
+                                        <span class="@item.IconPath"></span>
+                                    </span>
+                                    <span class="nav-link-text ps-1">@item.FunctionDesc</span>
+                                </div>
+                            </a>
+                            @if (item.HasChild)
+                            {
+                                var urlItem = "";
+                                var child = MenuHelper.GetItemsByParentId(lSysFunctionGetMenuByUserDtos, item.Id);
+                                <ul class="nav collapse @item.CssMenuOpen" id="menutop@(item.Id)">
+                                    @foreach (var item1 in child)
+                                    {
+                                        var child1 = MenuHelper.GetItemsByParentId(lSysFunctionGetMenuByUserDtos, item1.Id);
+                                        var hasChild1 = child1.Where(c => c.IsShow).Any();
+                                        urlItem = item1.Url;
+                                        <li class="nav-item @item1.CssMenuOpen">
+
+
+                                            @if (hasChild1)
+                                            {
+                                                <a class="nav-link dropdown-indicator" href="@(urlItem)" data-bs-toggle="collapse" aria-expanded="false" aria-controls="multi-level">
+                                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">@item1.FunctionDesc</span></div>
+                                                </a>
+                                                <ul class="nav collapse" id="menu-item@(item1.Id)">
+                                                    @foreach (var item2 in child1)
+                                                    {
+                                                        var child2 = MenuHelper.GetItemsByParentId(lSysFunctionGetMenuByUserDtos, item2.Id);
+                                                        var hasChild2 = child2.Where(c => c.IsShow).Any();
+                                                        urlItem = item2.Url; 
+                                                        <li class="nav-item">
+                                                            <a class="nav-link @item1.CssMenuActive" href="@(urlItem)">
+                                                                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">@item2.FunctionDesc</span></div>
+                                                            </a><!-- more inner pages-->
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                            else
+                                            {
+                                                <a href="@(urlItem)" class="nav-link @item1.CssMenuActive">
+                                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">@item1.FunctionDesc</span></div>
+                                                </a>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+
+                        </li>
+                    }
+                } 
+            </ul>
+        </div>
+    </div>
+</nav>

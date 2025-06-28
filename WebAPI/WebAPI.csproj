@@ -20,10 +20,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\IC.Application\IC.Application.csproj" />
-		<ProjectReference Include="..\IC.Infrastructure\IC.Infrastructure.csproj" />
-		<ProjectReference Include="..\IC.Persistence\IC.Persistence.csproj" />
-		<ProjectReference Include="..\IC.WebJob\IC.WebJob.csproj" />
+		<ProjectReference Include="..\Web.Application\Web.Application.csproj" />
+		<ProjectReference Include="..\Web.Infrastructure\Web.Infrastructure.csproj" />
+		<ProjectReference Include="..\Web.Persistence\Web.Persistence.csproj" />
+		<ProjectReference Include="..\WebJob\WebJob.csproj" />
 	</ItemGroup>
 
 </Project>

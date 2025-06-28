@@ -1,0 +1,42 @@
+﻿using Web.Domain.Enums.Identity;
+using Web.Application.DTOs.DictData;
+
+namespace Web.Application.Common.DictDataHelpers.Identity
+{
+	public static class UserStatusDtoHelper
+	{
+		public static List<StatusDto> GetIsEnabledList()
+		{
+			var statusDtoList = new List<StatusDto>
+			{
+				new StatusDto 
+				{ 
+					StatusId = (int)UserIsEnabledEnum.Active, StatusName = "Kích hoạt"
+				},
+				new StatusDto 
+				{ 
+					StatusId = (int)UserIsEnabledEnum.Deactive, StatusName = "Hủy kích hoạt"
+				}
+			};
+
+			return statusDtoList;
+		}
+
+		public static List<StatusDto> GetTwoFactorEnabledList()
+		{
+			var statusDtoList = new List<StatusDto>
+			{
+				new StatusDto 
+				{ 
+					StatusId = (int)UserTwoFactorEnabledEnum.Active, StatusName = "Kích hoạt"
+				},
+				new StatusDto 
+				{ 
+					StatusId = (int)UserTwoFactorEnabledEnum.Deactive, StatusName = "Hủy kích hoạt"
+				}
+			};
+
+			return statusDtoList;
+		}
+	}
+}

@@ -1,9 +1,9 @@
-﻿using IC.Application.Extensions;
-using IC.Application.Settings;
-using IC.Infrastructure.Extensions;
-using IC.Persistence.Extensions;
-using IC.WebJob.Areas.Identity.Extensions;
-using IC.WebJob.Helpers.Extensions;
+﻿using Web.Application.Extensions;
+using Web.Application.Settings;
+using Web.Infrastructure.Extensions;
+using Web.Persistence.Extensions;
+using WebJob.Areas.Identity.Extensions;
+using WebJob.Helpers.Extensions;
 using WebAPI.Filters;
 using WebAPI.Utils;
 

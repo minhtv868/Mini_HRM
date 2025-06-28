@@ -1,0 +1,127 @@
+﻿@page
+@model WebJob.Pages.Identity.Users.EditModel
+@{
+	Layout = null;
+}
+<form method="post"
+   data-ajax="true"
+   data-ajax-url="@Url.Page(pageName: "Edit")"
+   data-ajax-method="post"
+   data-ajax-begin="onBegin(this)"
+   data-ajax-success="onSuccessed(this, xhr)">
+	<div class="modal-header">
+		<h5 class="modal-title">Cập nhật tài khoản</h5>
+		<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+	</div>
+	<div class="modal-body mt-0">
+		<div class="row gx-2">
+			<div class="col-12">
+				<div class="mb-3 btn-reveal-trigger">
+					<div class="position-relative mb-4 text-center">
+						<div class="avatar avatar-5xl shadow-sm img-thumbnail rounded-circle">
+							<div class="h-100 w-100 rounded-circle overflow-hidden position-relative">
+								<img id="SelectMediaView_Users_Edit" src="@(string.IsNullOrWhiteSpace(Model.Command.AvatarPath) ? "/img/avatar.png" : $"{Model.Command.AvatarPath}?w=260&h=190")" alt="Ảnh đại diện" onclick="viewImageGlightbox(this)" data-dz-thumbnail="data-dz-thumbnail" />
+								<a href="javascript:void(0)" onclick="return modalMediaGet(this,'_Users_Edit')" class="mb-0 overlay-icon d-flex flex-center">
+									<span class="bg-holder overlay overlay-0"></span>
+									<span class="z-1 text-white dark__text-white text-center fs--1">
+										<span class="fas fa-camera"></span>
+										<span class="d-block">Chọn ảnh</span>
+									</span>
+								</a>
+								<input id="SelectMediaInput_Users_Edit" type="hidden" asp-for="Command.AvatarPath" />
+							</div>
+							<a href="javascript:void(0)" class="text-avata mt-3" onclick="document.getElementById('SelectMediaView_Users_Edit').src='/img/avatar.png';document.getElementById('SelectMediaInput_Users_Edit').value=''" title="Xóa Avatar, dùng Avatar mặc định"> Xóa Avatar</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.UserName" class="form-control did-floating-input" disabled />
+				<label asp-for="Command.UserName" class="did-floating-label"></label>
+				<span asp-validation-for="Command.UserName" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.FullName" asp-placeholder-for="Command.FullName" class="form-control did-floating-input" />
+				<label-required asp-for="Command.FullName" class="did-floating-label"></label-required>
+				<span asp-validation-for="Command.FullName" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.Email" asp-placeholder-for="Command.Email" class="form-control did-floating-input" />
+				<label-required asp-for="Command.Email" class="did-floating-label"></label-required>
+				<span asp-validation-for="Command.Email" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.PhoneNumber" asp-placeholder-for="Command.PhoneNumber" class="form-control did-floating-input" />
+				<label asp-for="Command.PhoneNumber" class="did-floating-label"></label>
+				<span asp-validation-for="Command.PhoneNumber" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.BirthDay" asp-placeholder-for="Command.BirthDay" class="form-control did-floating-input datepicker" />
+				<label asp-for="Command.BirthDay" class="did-floating-label"></label>
+				<span asp-validation-for="Command.BirthDay" class="text-danger"></span>
+			</div>
+			@* <div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.MapNewsUserId" asp-placeholder-for="Command.MapNewsUserId" class="form-control did-floating-input" />
+				<label asp-for="Command.MapNewsUserId" class="did-floating-label"></label>
+				<span asp-validation-for="Command.MapNewsUserId" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.MapPodCastUserId" asp-placeholder-for="Command.MapPodCastUserId" class="form-control did-floating-input" />
+				<label asp-for="Command.MapPodCastUserId" class="did-floating-label"></label>
+				<span asp-validation-for="Command.MapPodCastUserId" class="text-danger"></span>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<input asp-for="Command.MapVohDataUserId" asp-placeholder-for="Command.MapVohDataUserId" class="form-control did-floating-input" />
+				<label asp-for="Command.MapVohDataUserId" class="did-floating-label"></label>
+				<span asp-validation-for="Command.MapVohDataUserId" class="text-danger"></span>
+			</div> *@
+			<div class="col-12 mb-3 did-floating-label-content">
+				<input asp-for="Command.Address" asp-placeholder-for="Command.Address" class="form-control did-floating-input" />
+				<label asp-for="Command.Address" class="did-floating-label"></label>
+				<span asp-validation-for="Command.Address" class="text-danger"></span>
+			</div>
+			<div class="col-12 mb-3 did-floating-label-content">
+				<textarea asp-for="Command.Notes" asp-placeholder-for="Command.Notes" class="form-control did-floating-input"></textarea>
+				<label asp-for="Command.Notes" class="did-floating-label"></label>
+				<span asp-validation-for="Command.Notes" class="text-danger"></span>
+			</div>
+			<div class="col-12 mb-3">
+				<label class="control-label">Trạng thái</label>
+				<div clas="form-group">
+					<div class="form-check form-switch form-check-inline">
+						<input class="form-check-input" asp-for="Command.IsEnabled" />
+						<label class="form-check-label fw-normal" asp-for="Command.IsEnabled"></label>
+					</div>
+					<div class="form-check form-switch form-check-inline">
+						<input class="form-check-input" asp-for="Command.TwoFactorEnabled" />
+						<label class="form-check-label fw-normal" asp-for="Command.TwoFactorEnabled"></label>
+					</div>
+				</div>
+			</div>
+			<div class="col-12 mb-3">
+				<label class="control-label">Vai trò</label>
+				<div clas="form-group">
+					@foreach (var item in Model.AllRolesList)
+					{
+						<div class="form-check form-check-inline">
+							@if (Model.Command.RolesByUserList != null && Model.Command.RolesByUserList.Any() && Model.Command.RolesByUserList.Exists(x => x == item.Id))
+							{
+								<input class="form-check-input" id="Command.SelectedRoles.@item.Id" name="Command.SelectedRoles" type="checkbox" value="@item.Id" checked />
+							}
+							else
+							{
+								<input class="form-check-input" id="Command.SelectedRoles.@item.Id" name="Command.SelectedRoles" type="checkbox" value="@item.Id" />
+							}
+							<label class="form-check-label fw-normal" for="Command.SelectedRoles.@item.Id">@item.Name</label>
+						</div>
+					}
+				</div>
+			</div>
+			<input type="hidden" asp-for="Command.Id" />
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+		<button class="btn btn-primary" type="submit">Lưu</button>
+	</div>
+</form>

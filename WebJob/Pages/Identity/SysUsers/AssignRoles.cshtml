@@ -1,0 +1,39 @@
+﻿@page
+@model WebJob.Pages.Identity.SysUsers.AssignRolesModel
+@{
+    Layout = null;
+}
+@if (Model.Data != null && Model.Data.Any())
+{
+    <form method="post"
+          data-ajax="true"
+          data-ajax-url="@Url.Page(pageName: "AssignRoles")"
+          data-ajax-method="post" data-ajax-begin="onBegin(this)"
+          data-ajax-success="onSuccessed(this, xhr)">
+        <div class="modal-header">
+            <h5 class="modal-title">Gán vai trò cho tài khoản @Model.UserGetByIdDto.UserName</h5>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body mt-0">
+            @foreach (var item in Model.Data)
+            {
+                <div class="form-check form-check-inline">
+                    @if (Model.UserGetByIdDto.RolesByUserList != null && Model.UserGetByIdDto.RolesByUserList.Any() && Model.UserGetByIdDto.RolesByUserList.Exists(x => x == item.Id))
+                    {
+                        <input class="form-check-input" id="inlineCheckbox@(item.Id)" name="Command.SelectedRoles" type="checkbox" value="@item.Id" checked />
+                    }
+                    else
+                    {
+                        <input class="form-check-input" id="inlineCheckbox@(item.Id)" name="Command.SelectedRoles" type="checkbox" value="@item.Id" />
+                    }
+                    <label class="form-check-label" for="inlineCheckbox@(item.Id)">@item.Name</label>
+                </div>
+            }
+            <input type="hidden" asp-for="Command.Id" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+            <button class="btn btn-primary" type="submit">Lưu</button>
+        </div>
+    </form>
+}
