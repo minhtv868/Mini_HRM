@@ -1,7 +1,7 @@
 ﻿using Hangfire.MediatR;
 using Hangfire.Storage;
-using Web.Application.Features.BongDa24hJobs.Jobs.DTOs;
-using Web.Application.Features.BongDa24hJobs.Jobs.Queries;
+using Web.Application.Features.Finances.Jobs.DTOs;
+using Web.Application.Features.Finances.Jobs.Queries;
 using Web.Application.Jobs;
 using WebJob.Models;
 using MediatR;

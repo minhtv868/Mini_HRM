@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using Azure.Core;
 using Hangfire;
-using Web.Application.Features.BongDa24hJobs.JobQueues.DTOs;
-using Web.Application.Features.BongDa24hJobs.JobQueues.Queries;
-using Web.Application.Interfaces.Repositories.BongDa24hJobs;
+using Web.Application.Features.Finances.JobQueues.DTOs;
+using Web.Application.Features.Finances.JobQueues.Queries;
+using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Jobs;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -19,13 +19,13 @@ namespace Web.Application.Jobs.ProcessCommons
 	}
 	internal class JobQueueProcessJobHandler : IRequestHandler<JobQueueProcessJob>
 	{
-		private readonly IBongDa24hJobUnitOfWork _uow;
+		private readonly IFinanceUnitOfWork _uow;
 		private readonly IMediator _mediator;
 		private ILogger<JobQueueProcessJob> _logger;
 		private readonly IBackgroundJobClient _backgroundJobClient;
 		IConfiguration _configuration;
 		IMapper _mapper;
-		public JobQueueProcessJobHandler(IBongDa24hJobUnitOfWork uow,
+		public JobQueueProcessJobHandler(IFinanceUnitOfWork uow,
 			IMapper mapper, IMediator mediator, IBackgroundJobClient backgroundJobClient,
 			IConfiguration configuration, ILogger<JobQueueProcessJob> logger)
 		{

@@ -1,5 +1,5 @@
-using Web.Application.Features.BongDa24hJobs.Jobs.Commands;
-using Web.Application.Features.BongDa24hJobs.Jobs.Queries;
+using Web.Application.Features.Finances.Jobs.Commands;
+using Web.Application.Features.Finances.Jobs.Queries;
 using WebJob.Models;
 using Microsoft.AspNetCore.Mvc;
 

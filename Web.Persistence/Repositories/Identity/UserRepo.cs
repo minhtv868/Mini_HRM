@@ -7,9 +7,9 @@ namespace Web.Persistence.Repositories.Identity
 {
 	public class UserRepo : IUserRepo
     {
-        private readonly WebJobDbContext _dbContext;
+        private readonly FinanceDbContext _dbContext;
 
-        public UserRepo(WebJobDbContext dbContext)
+        public UserRepo(FinanceDbContext dbContext)
         {
             _dbContext = dbContext;
         }

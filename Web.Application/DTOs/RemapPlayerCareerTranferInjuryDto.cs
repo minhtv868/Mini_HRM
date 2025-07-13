@@ -1,7 +1,7 @@
 ﻿using Web.Application.Common.Mappings;
 using Web.Domain.Entities.Jobs;
 
-namespace Web.Application.Features.BongDa24hJobs.JobQueues.DTOs
+namespace Web.Application.Features.Finances.JobQueues.DTOs
 {
     public class RemapPlayerCareerTranferInjuryDto
     {

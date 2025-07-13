@@ -2,10 +2,10 @@
 using Web.Application.Settings;
 using Web.Infrastructure.Extensions;
 using Web.Persistence.Extensions;
-using WebJob.Areas.Identity.Extensions;
-using WebJob.Helpers.Extensions;
 using WebAPI.Filters;
 using WebAPI.Utils;
+using WebJob.Areas.Identity.Extensions;
+using WebJob.Helpers.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +49,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.MapControllers();
+
 app.UseCors(builder =>
 {
     builder
@@ -57,5 +57,5 @@ app.UseCors(builder =>
     .AllowAnyMethod()
     .AllowAnyHeader();
 });
-
+app.MapControllers();
 app.Run();

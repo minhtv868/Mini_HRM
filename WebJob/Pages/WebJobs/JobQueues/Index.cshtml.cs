@@ -1,5 +1,5 @@
-﻿using Web.Application.Features.BongDa24hJobs.JobQueues.DTOs;
-using Web.Application.Features.BongDa24hJobs.JobQueues.Queries;
+﻿using Web.Application.Features.Finances.JobQueues.DTOs;
+using Web.Application.Features.Finances.JobQueues.Queries;
 using Web.Shared;
 using WebJob.Models;
 using Microsoft.AspNetCore.Mvc;

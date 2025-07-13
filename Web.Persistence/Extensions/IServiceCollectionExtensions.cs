@@ -1,17 +1,14 @@
-﻿using Web.Application.Interfaces;
-using Web.Application.Interfaces.Repositories;
-using Web.Application.Interfaces.Repositories.BongDa24hCrawls;
-using Web.Application.Interfaces.Repositories.BongDa24hJobs;
-using Web.Application.Interfaces.Repositories.Identity;
-using Web.Persistence.Contexts;
-using Web.Persistence.Repositories;
-using Web.Persistence.Repositories.BongDa24hCrawls;
-using Web.Persistence.Repositories.BongDa24hJobs;
-using Web.Persistence.Repositories.Identity;
-using Web.Persistence.Services;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Web.Application.Interfaces;
+using Web.Application.Interfaces.Repositories;
+using Web.Application.Interfaces.Repositories.Finances;
+using Web.Application.Interfaces.Repositories.Identity;
+using Web.Persistence.Contexts;
+using Web.Persistence.Repositories.Finances;
+using Web.Persistence.Repositories.Identity;
+using Web.Persistence.Services;
 
 namespace Web.Persistence.Extensions
 {
@@ -19,19 +16,18 @@ namespace Web.Persistence.Extensions
     {
         public static void AddPersistenceLayer(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddIdentityDbContext(configuration);
-            services.AddBongDa24hJobDbContext(configuration);
-            services.AddBongDa24hCrawlsDbContext(configuration);
+            services.AddFinanceDbContext(configuration);
+            //     services.AddFinanceDbContext(configuration);
             services.AddServices();
         }
-        public static void AddIdentityDbContext(this IServiceCollection services, IConfiguration configuration)
+        public static void AddFinanceDbContext(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("IdentityConnection");
+            var connectionString = configuration.GetConnectionString("FinanceConnection");
 
-            services.AddDbContext<WebJobDbContext>(options =>
+            services.AddDbContext<FinanceDbContext>(options =>
                options.UseSqlServer(connectionString,
                    builder => builder.MigrationsAssembly("WebJob")));
-
+            services.AddTransient<IFinanceUnitOfWork, FinanceUnitOfWork>();
             services
                 .AddTransient<IIdentityUnitOfWork, IdentityUnitOfWork>()
                 .AddTransient<IUserRepo, UserRepo>()
@@ -39,38 +35,24 @@ namespace Web.Persistence.Extensions
                 .AddTransient<IUserRoleRepo, UserRoleRepo>()
                 .AddTransient<ISysFunctionRepo, SysFunctionRepo>();
         }
-        public static void AddBongDa24hJobDbContext(this IServiceCollection services, IConfiguration configuration)
-        {
-            var connectionString = configuration.GetConnectionString("HangfireConnection");
+        //public static void AddFinanceDbContext(this IServiceCollection services, IConfiguration configuration)
+        //{
+        //    var connectionString = configuration.GetConnectionString("FinanceConnection");
 
-            services.AddDbContext<BongDa24hJobDbContext>(options =>
-               options.UseSqlServer(connectionString,
-                   builder =>
-                   {
-                       builder.MigrationsAssembly("IC.WebApp");
-                   }));
+        //    services.AddDbContext<FinanceDbContext>(options =>
+        //       options.UseSqlServer(connectionString,
+        //           builder =>
+        //           {
+        //               builder.MigrationsAssembly("WebJob");
+        //           }));
 
-            services.AddTransient<IBongDa24hJobUnitOfWork, BongDa24hJobUnitOfWork>();
-        }
-
-        public static void AddBongDa24hCrawlsDbContext(this IServiceCollection services, IConfiguration configuration)
-        {
-            var connectionString = configuration.GetConnectionString("BongDa24hCrawlsConnection");
-
-            services.AddDbContext<BongDa24hCrawlDbContext>(options =>
-               options.UseSqlServer(connectionString,
-                   builder =>
-                   {
-                       builder.MigrationsAssembly("IC.WebApp");
-                   }));
-
-            services.AddTransient<IBongDa24HCrawlUnitOfWork, BongDa24hCrawlsUnitOfWork>();
-        }
+        //    services.AddTransient<IFinanceUnitOfWork, FinanceUnitOfWork>();
+        //}
 
         public static void AddServices(this IServiceCollection services)
         {
             services.AddTransient<IAuditableService, AuditableServicev2>();
-            services.AddTransient<IGenericDbService, GenericDbService>();
+            //    services.AddTransient<IGenericDbService, GenericDbService>();
         }
     }
 }

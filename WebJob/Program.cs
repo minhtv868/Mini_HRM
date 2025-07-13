@@ -1,22 +1,16 @@
 ﻿using Hangfire;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using Web.Application.Common.Constants;
 using Web.Application.Extensions;
 using Web.Application.Settings;
 using Web.Infrastructure.Extensions;
 using Web.Persistence.Extensions;
 using WebJob.Areas.Identity.Extensions;
+using WebJob.Filters;
 using WebJob.Helpers.Extensions;
 using WebJob.Helpers.Hangfire;
-using AspNetCore.DataProtection.SqlServer;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using Web.Application.Common.Helpers;
-using Microsoft.AspNetCore.Http.Features;
-using Web.Application.Common.Constants;
-using WebJob.Filters;
 
 //create the logger and setup your sinks, filters and properties
 Log.Logger = new LoggerConfiguration()
@@ -56,7 +50,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     // Cookie settings
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     options.SlidingExpiration = true;
-    options.Cookie.Name = "cmsBongDa24hcloud";
+    options.Cookie.Name = "webjob";
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.HttpOnly = true;
@@ -106,7 +100,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddSession(options =>
 {
     // Cookie settings
-    options.Cookie.Name = ".cmsBongDa24hcloud.Session";
+    options.Cookie.Name = ".cmswebjob.Session";
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.HttpOnly = true;

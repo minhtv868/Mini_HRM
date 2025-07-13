@@ -8,10 +8,10 @@ namespace Web.Persistence.Repositories.Identity
 {
     public class SysFunctionRepo : ISysFunctionRepo
     {
-        private readonly WebJobDbContext _dbContext;
+        private readonly FinanceDbContext _dbContext;
         private readonly IGenericRepository<SysFunction> _repository;
         private int treeOrder = 0;
-        public SysFunctionRepo(WebJobDbContext dbContext)
+        public SysFunctionRepo(FinanceDbContext dbContext)
         {
             _dbContext = dbContext;
             _repository = new GenericRepository<SysFunction>(dbContext);

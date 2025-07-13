@@ -1,6 +1,6 @@
-﻿using Web.Application.Features.BongDa24hJobs.Jobs.Commands;
-using Web.Application.Features.BongDa24hJobs.Jobs.DTOs;
-using Web.Application.Features.BongDa24hJobs.Jobs.Queries;
+﻿using Web.Application.Features.Finances.Jobs.Commands;
+using Web.Application.Features.Finances.Jobs.DTOs;
+using Web.Application.Features.Finances.Jobs.Queries;
 using Web.Shared;
 using WebJob.Helpers.Configs;
 using WebJob.Models;

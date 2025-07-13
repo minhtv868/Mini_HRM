@@ -5,14 +5,14 @@ namespace Web.Domain.Entities.Finance
     public class Article : BaseAuditableEntity
     {
         public int Id { get; set; }
-        public string Title { get; set; }            // Tiêu đề chính (hiển thị H1)
-        public string Slug { get; set; }             // Đường dẫn URL (VD: "cach-tiet-kiem-cho-genz")
-        public string Summary { get; set; }          // Mô tả ngắn (thường là đoạn đầu nội dung)
+        public string Title { get; set; }
+        public string Slug { get; set; }
+        public string Summary { get; set; }
         public string Content { get; set; }
-        public string MetaTitle { get; set; }        // <title>
-        public string MetaDescription { get; set; }  // <meta name="description">
-        public string ImageUrl { get; set; }         // og:image, ảnh đại diện
-        public DateTime? PublishTime { get; set; }   // Ngày xuất bản
+        public string MetaTitle { get; set; }
+        public string MetaDescription { get; set; }
+        public string ImageUrl { get; set; }
+        public DateTime? PublishTime { get; set; }
         public int ViewCount { get; set; } = 0;
         public int CommentCount { get; set; }
         public int? CategoryId { get; set; }
