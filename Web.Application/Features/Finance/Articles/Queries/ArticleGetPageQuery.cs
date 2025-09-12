@@ -39,15 +39,10 @@ namespace Web.Application.Features.Finance.Articles.Queries
         public async Task<PaginatedResult<ArticleGetPageDto>> Handle(ArticleGetPageQuery queryInput, CancellationToken cancellationToken)
         {
             var query = _unitOfWork.Repository<Article>().Entities;
-            // var listSendMethod = _unitOfWork.Repository<SendMethod>().Entities;
             if (queryInput.SiteId > 0)
             {
                 query = query.Where(x => x.SiteId == queryInput.SiteId);
             }
-            //if (queryInput.SendMethodId > 0)
-            //{
-            //    query = query.Where(x => x.SendMethodId == queryInput.SendMethodId);
-            //}
             //if (!string.IsNullOrWhiteSpace(queryInput.Keywords))
             //{
             //    query = query.Where(x => x.MessageName.Contains(queryInput.Keywords) || x.SendFrom.Contains(queryInput.Keywords) || x.Title.Contains(queryInput.Keywords));
@@ -59,18 +54,14 @@ namespace Web.Application.Features.Finance.Articles.Queries
                 var listCategories = await _sender.Send(new CategoryGetAllBySiteQuery() { SiteId = queryInput.SiteId });
                 foreach (var item in result.Data)
                 {
-                    //if (item.SendMethodId > 0)
+                    //if (item.CrUserId > 0)
                     //{
-                    //    item.SendMethod = listSendMethod.FirstOrDefault(x => x.SendMethodId == item.SendMethodId).SendMethodName;
+                    //    var crUser = listUsers.Data.FirstOrDefault(x => x. == item.CrUserId);
+                    //    item.CrUser = crUser != null ? crUser.UserName : "...";
                     //}
-                    if (item.CrUserId > 0)
-                    {
-                        var crUser = listUsers.Data.FirstOrDefault(x => x.Id == item.CrUserId);
-                        item.CrUser = crUser != null ? crUser.UserName : "...";
-                    }
                     if (item.CategoryId > 0)
                     {
-                        var category = listCategories.FirstOrDefault(x => x.Id == item.CategoryId);
+                        var category = listCategories.FirstOrDefault(x => x.CategoryId == item.CategoryId);
                         item.CategoryName = category != null ? category.CategoryName : "...";
                     }
 

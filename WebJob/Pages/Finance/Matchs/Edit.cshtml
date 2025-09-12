@@ -1,0 +1,56 @@
+﻿@page
+@model WebJob.Pages.Finance.Matchs.EditModel
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "Edit")"
+      data-ajax-method="post"
+      data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr)">
+    <div class="modal-header">
+        <h5 class="modal-title">Sửa mẫu tin <small id="progress" class="ms-2 fs--1 text-primary"></small></h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body modal-dialog-scrollable mt-0">
+        <div class="row gx-2">
+            <input asp-for="Command.MatchId" type="hidden"/>
+            <input type="hidden" asp-for="Command.SiteId" />
+            @* <div class=" col-sm-6 mb-3 did-floating-label-content">
+                <select asp-for="Command.SiteId" style="color:darkgrey !important" id="Command_SiteId" asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))" disabled class="form-select did-floating-select">
+                </select>
+                <label asp-for="Command.SiteId" class="did-floating-label"></label>
+            </div>
+            <div class=" col-sm-6 mb-3 did-floating-label-content">
+                <select asp-for="Command.SendMethodId" asp-items="@(new SelectList(Model.SendMethodList, "SendMethodId", "SendMethodName"))" class="form-select did-floating-select">
+                </select>
+                <label asp-for="Command.SendMethodId" class="did-floating-label"></label>
+            </div> *@
+           @*  <div class="col-12 col-sm-12 did-floating-label-content view-maxlength">
+                <input asp-for="Command.MessageName" asp-placeholder-for="Command.MessageName" class="form-control did-floating-input " />
+                <label-required asp-for="Command.MessageName" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.MessageName" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-12 did-floating-label-content view-maxlength">
+                <input asp-for="Command.SendFrom" asp-placeholder-for="Command.SendFrom" class="form-control did-floating-input " />
+                <label-required asp-for="Command.SendFrom" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.SendFrom" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-sm-12 did-floating-label-content view-maxlength">
+                <input asp-for="Command.Title" asp-placeholder-for="Command.Title" class="form-control did-floating-input " />
+                <label-required asp-for="Command.Title" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.Title" class="text-danger"></span>
+            </div>
+            <div class="col-12 col-md-12 did-floating-label-content">
+                <label asp-for="Command.MsgContent"></label>
+                <textarea asp-for="Command.MsgContent" class="ckeditor-input"></textarea>
+                <span asp-validation-for="Command.MsgContent" class="text-danger"></span>
+            </div> *@
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>

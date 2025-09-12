@@ -14,6 +14,9 @@ namespace WebAPI.Controllers
 
         private IMapper _mapper = null;
         protected IMapper Mapper => _mapper ??= HttpContext.RequestServices.GetRequiredService<IMapper>();
+        private ILogger? _logger;
+        protected ILogger Logger =>
+                    _logger ??= HttpContext.RequestServices.GetRequiredService<ILogger<BaseController>>();
         protected CancellationToken CancellationToken => HttpContext.RequestAborted;
     }
 }

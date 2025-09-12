@@ -1,0 +1,35 @@
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Web.Application.Features.Finance.Matchs.DTOs;
+using Web.Application.Interfaces.Repositories.Finances;
+using Web.Domain.Entities.Finance;
+
+namespace Web.Application.Features.Finance.Matchs.Queries
+{
+    public class MatchGetAllBySiteQuery : IRequest<List<MatchGetAllBySiteDto>>
+    {
+        public short? SiteId { get; set; }
+    }
+    internal class MatchGetAllBySiteQueryHandler : IRequestHandler<MatchGetAllBySiteQuery, List<MatchGetAllBySiteDto>>
+    {
+        private readonly IFinanceUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+        private readonly ISender _sender;
+        public MatchGetAllBySiteQueryHandler(IFinanceUnitOfWork unitOfWork, IMapper mapper, ISender sender)
+        {
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
+            _sender = sender;
+        }
+        public async Task<List<MatchGetAllBySiteDto>> Handle(MatchGetAllBySiteQuery request, CancellationToken cancellationToken)
+        {
+            var query = _unitOfWork.Repository<Match>().Entities.Where(x => x.SiteId == request.SiteId);
+            var result = await query
+                 .ProjectTo<MatchGetAllBySiteDto>(_mapper.ConfigurationProvider)
+                 .ToListAsync(cancellationToken);
+            return result;
+        }
+    }
+}

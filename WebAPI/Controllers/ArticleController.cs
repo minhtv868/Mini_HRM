@@ -11,6 +11,7 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetAllBySite(short siteId)
         {
             var resultData = await Mediator.Send(new ArticleGetAllBySiteQuery() { SiteId = siteId });
+            Logger.LogError("Test log error");
             return Ok(resultData);
         }
         [HttpGet("GetPage")]
