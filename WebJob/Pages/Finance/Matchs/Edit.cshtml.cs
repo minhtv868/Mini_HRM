@@ -1,8 +1,14 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Web.Application.Features.Finance.Leagues.DTOs;
+using Web.Application.Features.Finance.Leagues.Queries;
 using Web.Application.Features.Finance.Matchs.Commands;
 using Web.Application.Features.Finance.Matchs.Queries;
+using Web.Application.Features.Finance.Sites.DTOs;
+using Web.Application.Features.Finance.Sites.Queries;
+using Web.Application.Features.Finance.Teams.DTOs;
+using Web.Application.Features.Finance.Teams.Queries;
 using WebJob.Models;
 
 namespace WebJob.Pages.Finance.Matchs
@@ -10,8 +16,9 @@ namespace WebJob.Pages.Finance.Matchs
     public class EditModel : BasePageModel
     {
         private readonly IMediator _mediator;
-        //public List<SiteGetAllByUserDto> SiteList;
-        //public List<SendMethodGetAllDto> SendMethodList;
+        public List<SiteGetAllByUserDto> SiteList;
+        public List<LeagueGetAllDto> LeagueList;
+        public List<TeamGetAllDto> TeamList;
         public IValidator<MatchEditCommand> _validator;
 
         public EditModel(IMediator mediator, IValidator<MatchEditCommand> validator)
@@ -33,8 +40,9 @@ namespace WebJob.Pages.Finance.Matchs
             {
                 return NotFound();
             }
-            //SiteList = (await Mediator.Send(new SiteGetAllByUserQuery())).Where(x => x.SiteId > 0).ToList();
-            //SendMethodList = await Mediator.Send(new SendMethodGetAllQuery());
+            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
+            LeagueList = await Mediator.Send(new LeagueGetAllQuery());
+            TeamList = await Mediator.Send(new TeamGetAllQuery());
             Command = Mapper.Map<MatchEditCommand>(dataGetById.Data);
             return Page();
         }

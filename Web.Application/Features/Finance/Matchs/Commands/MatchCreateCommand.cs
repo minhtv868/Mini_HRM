@@ -6,33 +6,53 @@ using Web.Application.Interfaces;
 using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
 using Web.Shared;
+using Web.Shared.Helpers;
 
 namespace Web.Application.Features.Finance.Matchs.Commands
 {
     public class MatchCreateCommand : IRequest<Result<int>>, IMapFrom<Match>
     {
-        [DisplayName("Tên trận đấu")]
-        public DateTime? EstimateStartTime { get; set; }
 
+        [DisplayName("Thời gian")]
+        public DateTime EstimateStartTime { get; set; }
+        [DisplayName("Thời gian")]
+        public string EstimateStartTimeText { get; set; }
+
+        [DisplayName("Đội chủ nhà")]
         public short? HomeId { get; set; }
+
+        [DisplayName("Đội khách")]
         public short? AwayId { get; set; }
+
+        [DisplayName("Giải đấu")]
         public short? LeagueId { get; set; }
+
+        [DisplayName("Tên đội chủ nhà")]
         public string HomeName { get; set; }
+        [DisplayName("Tên đội khách")]
         public string AwayName { get; set; }
+        [DisplayName("Logo đội chủ nhà")]
         public string HomeLogoPath { get; set; }
+        [DisplayName("Logo đội khách")]
         public string AwayLogoPath { get; set; }
+        [DisplayName("Bàn thắng đội chủ nhà")]
         public byte? HomeGoals { get; set; }
+        [DisplayName("Bàn thắng đội khách")]
         public byte? AwayGoals { get; set; }
+
+        [DisplayName("Sân vận động")]
         public string StadiumName { get; set; }
+        [DisplayName("Tên giải đấu")]
         public string LeagueName { get; set; }
+        [DisplayName("Logo giải đấu")]
         public string LeagueImage { get; set; }
-        public bool? IsLive { get; set; }
-        public bool? IsHot { get; set; }
+        [DisplayName("Trực tiếp")]
+        public bool IsLive { get; set; }
+        [DisplayName("Nổi bật")]
+        public bool IsHot { get; set; }
+
+        [DisplayName("Site")]
         public int? SiteId { get; set; }
-        public int? CrUserId { get; set; }
-        public DateTime CrDateTime { get; set; }
-        public int? UpdUserId { get; set; }
-        public DateTime? UpdDateTime { get; set; }
         public DateTime? LastUpdateTime { get; set; }
         [DisplayName("Thêm tiếp dữ liệu khác")]
         public bool AddMoreData { get; set; }
@@ -52,12 +72,17 @@ namespace Web.Application.Features.Finance.Matchs.Commands
         }
         public async Task<Result<int>> Handle(MatchCreateCommand command, CancellationToken cancellationToken)
         {
-            //var Match = _unitOfWork.Repository<Match>().Entities.FirstOrDefault(x => x.MessageName.Trim().ToLower().Equals(command.MessageName.Trim().ToLower()));
+            //var dataAny = _unitOfWork.Repository<Match>().Entities.FirstOrDefault(x => x.H.Trim().ToLower().Equals(command.MessageName.Trim().ToLower()));
             //if (Match != null)
             //{
             //    return await Result<int>.FailureAsync($"Match đã tồn tại");
             //}
+
             var entity = _mapper.Map<Match>(command);
+            if (!string.IsNullOrEmpty(command.EstimateStartTimeText))
+            {
+                entity.EstimateStartTime = command.EstimateStartTimeText.StrToDateTime("dd-MM-yyyy HH:mm:ss");
+            }
             entity.CrUserId = _currentUserService.UserId;
             entity.CrDateTime = DateTime.Now;
             await _unitOfWork.Repository<Match>().AddAsync(entity);

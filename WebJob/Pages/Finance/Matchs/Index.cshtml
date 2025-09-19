@@ -7,22 +7,36 @@
     <div class="card-header pt-1 car-header-padding">
         <form method="get" class="justify-content-between search-form">
             <div class="row gx-2 align-items-center ">
-                @* <div class="col-12 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+                 <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-2 did-floating-label-content">
                     <select asp-for="Query.SiteId" asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))"
-                            class="form-select form-select-submit did-floating-select" style="margin-bottom:15px"
+                            class="form-select form-select-submit did-floating-select"
                             onclick="this.setAttribute('value', this.value); return false;"
                             onchange="this.setAttribute('value', this.value); return false;">
+                        <option value="0">...</option>
                     </select>
+                   
                     <label asp-for="Query.SiteId" class="did-floating-label"></label>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
-                    <select asp-for="Query.SendMethodId" asp-items="@(new SelectList(Model.SendMethodList, "SendMethodId", "SendMethodName"))"
-                            class="form-select form-select-submit did-floating-select" style="margin-bottom:15px"
+                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-2 did-floating-label-content">
+                    <select asp-for="Query.SiteId" asp-items="@(new SelectList(Model.LeagueList, "LeagueId", "LeagueName"))"
+                            class="form-select form-select-submit did-floating-select"
                             onclick="this.setAttribute('value', this.value); return false;"
                             onchange="this.setAttribute('value', this.value); return false;">
+                        <option value="0">...</option>
                     </select>
-                    <label asp-for="Query.SendMethodId" class="did-floating-label"></label>
-                </div> *@
+
+                    <label asp-for="Query.SiteId" class="did-floating-label"></label>
+                </div>
+                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-2 did-floating-label-content">
+                    <select asp-for="Query.SiteId" asp-items="@(new SelectList(Model.TeamList, "TeamId", "TeamName"))"
+                            class="form-select form-select-submit did-floating-select"
+                            onclick="this.setAttribute('value', this.value); return false;"
+                            onchange="this.setAttribute('value', this.value); return false;">
+                        <option value="0">...</option>
+                    </select>
+
+                    <label asp-for="Query.SiteId" class="did-floating-label"></label>
+                </div>
                 <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content ">
                     <input class="form-control did-floating-input" asp-for="Query.Keywords" asp-placeholder-for="Query.Keywords" type="search" />
                     <label asp-for="Query.Keywords" class="did-floating-label"></label>

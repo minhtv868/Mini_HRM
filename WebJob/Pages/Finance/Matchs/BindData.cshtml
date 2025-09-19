@@ -32,7 +32,7 @@
                             </div>
                             <div class="bulk-select-replace-element d-flex align-items-center">
                                 <button class="btn btn-primary no-focus ms-2" type="button"
-                                        data-modal="modal-lg"
+                                        data-modal="modal-xl"
                                         onclick="return modalGet(this, '@Url.Page(pageName: "Create",values: new { SiteId = Model.Item3}) ', 'Thêm mẫu tin')"
                                         title="Thêm mẫu tin">
                                     <i class="fas fa-plus"></i>
@@ -52,6 +52,7 @@
             <th class="align-middle text-nowrap text-center">Chủ nhà</th>
             <th class="align-middle text-nowrap text-center">Tỉ số</th>
             <th class="align-middle text-nowrap text-center">Đội khách</th>
+            <th class="align-middle col-sm-1 text-center ">Thời gian</th>
             <th class="align-middle col-sm-1 text-center ">Thao tác</th>
             <th class="fs-0 text-nowrap pe-3">
                 <div class="form-check mb-0">
@@ -73,7 +74,7 @@
                         <span class="mb-0 fw-semi-bold text-wrap">@item.EstimateStartTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
                     </td>
                     <td class="text-nowrap" >
-                        <span class="mb-0  text-wrap">@item.LeagueId</span>
+                        <span class="mb-0  text-wrap">@item.LeagueName</span>
                     </td>
                     <td class="text-nowrap">
                         <span class="mb-0 text-wrap">@item.HomeName</span>
@@ -84,19 +85,32 @@
                     <td class="text-nowrap">
                         <span class="mb-0 text-wrap">@item.AwayName</span>
                     </td>
-                    <td class="align-middle text-nowrap text-center" style="max-width:150px">
+                    <td class="align-middle text-nowrap text-center">
                         <small class="mb-0 fs--1" title="Người tạo">
-                            <i class="fas fa-user-plus text-500 fa-sm"></i> <span class="mb-0" title="Người tạo">@Html.DisplayFor(modelItem => @item.CrUser)</span>
+                            <i class="fas fa-user-plus text-500 fa-sm"></i> <span class="mb-0" title="Người tạo">@item.AuditableInfo.CreatedByUserName</span>
                         </small><br />
                         <small class="mb-0 fs--1 " title="Thời gian tạo: @item.CrDateTime.ToStringFormat()">
-                            <span class="mb-0" style="padding-left:7px">@item.CrDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
+                            <span class="mb-0">@item.CrDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
                         </small> <br />
+                       
+                        @if(item.UpdDateTime != null)
+                        {
+                            <small class="mb-0 fs--1" title="Người cập nhật">
+                                <i class="fas fa-user-plus text-500 fa-sm"></i> <span class="mb-0" title="Người cập nhật">@item.AuditableInfo.UpdatedByUserName</span>
+                            </small>
+                
+                            <br />
+                             <small class="mb-0 fs--1 " title="Thời gian cập nhật: @item.UpdDateTime.ToStringFormat()">
+                            <span class="mb-0">@item.UpdDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
+                        </small> <br />
+                        }
+                       
                        
                     </td>
                    
                     <td class="align-middle white-space-nowrap text-center pe-3">
                         <button class="btn btn-link p-0 ms-1" type="button"
-                                data-modal="modal-lg"
+                                data-modal="modal-xl"
                                 onclick="return modalGet(this, '@Url.Page(pageName:"Edit", values: new { id = item.MatchId })', 'Cập nhật mẫu tin')"
                                 title="Cập nhật mẫu tin">
                             <i class="far fa-edit"></i>

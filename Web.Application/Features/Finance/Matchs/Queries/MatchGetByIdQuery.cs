@@ -4,10 +4,11 @@ using Web.Application.Features.Finance.Matchs.DTOs;
 using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
 using Web.Shared;
+using Web.Shared.Helpers;
 
 namespace Web.Application.Features.Finance.Matchs.Queries
 {
-    public class MatchGetByIdQuery : IRequest<Result<MatchGetByIdDto>>
+    public class MatchGetByIdQuery : MediatR.IRequest<Result<MatchGetByIdDto>>
     {
         public short MatchId { get; set; }
     }
@@ -30,6 +31,7 @@ namespace Web.Application.Features.Finance.Matchs.Queries
                 return await Result<MatchGetByIdDto>.FailureAsync("Match không tồn tại");
             }
             var dataGetByIdDto = _mapper.Map<MatchGetByIdDto>(entity);
+            dataGetByIdDto.EstimateStartTimeText = dataGetByIdDto.EstimateStartTime.ToStringFormat("dd-MM-yyyy HH:mm:ss");
             return await Result<MatchGetByIdDto>.SuccessAsync(dataGetByIdDto);
         }
     }

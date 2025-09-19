@@ -5,30 +5,28 @@ using System.ComponentModel;
 using System.Linq.Dynamic.Core;
 using Web.Application.DTOs.MediatR;
 using Web.Application.Extensions;
-using Web.Application.Features.Finance.Matchs.DTOs;
+using Web.Application.Features.Finance.Sites.DTOs;
 using Web.Application.Interfaces;
 using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
 using Web.Shared;
 
-namespace Web.Application.Features.Finance.Matchs.Queries
+namespace Web.Application.Features.Finance.Sites.Queries
 {
-    public record MatchGetPageQuery : BaseGetPageQuery, IRequest<PaginatedResult<MatchGetPageDto>>
+    public record SiteGetPageQuery : BaseGetPageQuery, IRequest<PaginatedResult<SiteGetPageDto>>
     {
         [DisplayName("Site")]
         public short? SiteId { get; set; }
         [DisplayName("Hình thức gửi")]
         public byte SendMethodId { get; set; }
-
-
     }
-    internal class MatchGetPageQueryHandler : IRequestHandler<MatchGetPageQuery, PaginatedResult<MatchGetPageDto>>
+    internal class SiteGetPageQueryHandler : IRequestHandler<SiteGetPageQuery, PaginatedResult<SiteGetPageDto>>
     {
         private readonly IFinanceUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ISender _sender;
         private readonly IAuditableService _auditableService;
-        public MatchGetPageQueryHandler(IFinanceUnitOfWork unitOfWork, IMapper mapper, ISender sender, IAuditableService auditableService)
+        public SiteGetPageQueryHandler(IFinanceUnitOfWork unitOfWork, IMapper mapper, ISender sender, IAuditableService auditableService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -36,10 +34,9 @@ namespace Web.Application.Features.Finance.Matchs.Queries
             _auditableService = auditableService;
         }
 
-        public async Task<PaginatedResult<MatchGetPageDto>> Handle(MatchGetPageQuery queryInput, CancellationToken cancellationToken)
+        public async Task<PaginatedResult<SiteGetPageDto>> Handle(SiteGetPageQuery queryInput, CancellationToken cancellationToken)
         {
-            var query = _unitOfWork.Repository<Match>().Entities;
-            // var listSendMethod = _unitOfWork.Repository<SendMethod>().Entities;
+            var query = _unitOfWork.Repository<Site>().Entities;
             if (queryInput.SiteId > 0)
             {
                 query = query.Where(x => x.SiteId == queryInput.SiteId);
@@ -52,7 +49,7 @@ namespace Web.Application.Features.Finance.Matchs.Queries
             //{
             //    query = query.Where(x => x.MessageName.Contains(queryInput.Keywords) || x.SendFrom.Contains(queryInput.Keywords) || x.Title.Contains(queryInput.Keywords));
             //}
-            var result = await query.OrderBy(x => x.CrDateTime).ProjectTo<MatchGetPageDto>(_mapper.ConfigurationProvider).ToPaginatedListAsync(queryInput.Page, queryInput.PageSize, cancellationToken);
+            var result = await query.OrderBy(x => x.CrDateTime).ProjectTo<SiteGetPageDto>(_mapper.ConfigurationProvider).ToPaginatedListAsync(queryInput.Page, queryInput.PageSize, cancellationToken);
             //if (result.Data != null && result.Data.Any())
             //{
             //    var listUsers = await _sender.Send(new UserGetAllQuery());

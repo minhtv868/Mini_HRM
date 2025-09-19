@@ -2,5 +2,6 @@
 {
     public class MatchGetByIdDto : MatchDto
     {
+        public string EstimateStartTimeText { get; set; }
     }
 }

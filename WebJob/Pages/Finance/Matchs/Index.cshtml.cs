@@ -1,7 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Web.Application.Features.Finance.Leagues.DTOs;
+using Web.Application.Features.Finance.Leagues.Queries;
 using Web.Application.Features.Finance.Matchs.Commands;
 using Web.Application.Features.Finance.Matchs.DTOs;
 using Web.Application.Features.Finance.Matchs.Queries;
+using Web.Application.Features.Finance.Sites.DTOs;
+using Web.Application.Features.Finance.Sites.Queries;
+using Web.Application.Features.Finance.Teams.DTOs;
+using Web.Application.Features.Finance.Teams.Queries;
 using Web.Shared;
 using WebJob.Helpers.Configs;
 using WebJob.Models;
@@ -13,26 +19,23 @@ namespace WebJob.Pages.Finance.Matchs
         [BindProperty]
         public MatchGetPageQuery Query { get; set; }
         public PaginatedResult<MatchGetPageDto> PaginatedResult;
-        //public List<SiteGetAllByUserDto> SiteList;
-        //public List<SendMethodGetAllDto> SendMethodList;
+        public List<SiteGetAllByUserDto> SiteList;
+        public List<LeagueGetAllDto> LeagueList;
+        public List<TeamGetAllDto> TeamList;
         private readonly int _pageSize = AppConfig.AppSettings.PageSize;
         public async Task<IActionResult> OnGet(MatchGetPageQuery query, [FromQuery] int page = 1)
         {
             Query = query;
             Query.Page = page;
             Query.PageSize = _pageSize;
-            //SiteList = (await Mediator.Send(new SiteGetAllByUserQuery())).Where(x => x.SiteId > 0).ToList();
-            //if (SiteList != null && SiteList.Any() && Query.SiteId == null)
-            //{
-            //    Query.SiteId = SiteList[0].SiteId;
-            //}
+            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
+            if (SiteList != null && SiteList.Any() && Query.SiteId == null)
+            {
+                Query.SiteId = SiteList[0].SiteId;
+            }
+            LeagueList = await Mediator.Send(new LeagueGetAllQuery());
+            TeamList = await Mediator.Send(new TeamGetAllQuery());
             PaginatedResult = await Mediator.Send(query);
-            //SendMethodList = (await Mediator.Send(new SendMethodGetAllQuery())).ToList();
-            //SendMethodList.Insert(0, new SendMethodGetAllDto
-            //{
-            //    SendMethodId = 0,
-            //    SendMethodName = "..."
-            //});
 
             PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
             return Page();
@@ -46,13 +49,7 @@ namespace WebJob.Pages.Finance.Matchs
             PaginatedResult = await Mediator.Send(query);
 
             PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
-            //SiteList = (await Mediator.Send(new SiteGetAllByUserQuery())).Where(x => x.SiteId > 0).ToList();
-            //SendMethodList = (await Mediator.Send(new SendMethodGetAllQuery())).ToList();
-            //SendMethodList.Insert(0, new SendMethodGetAllDto
-            //{
-            //    SendMethodId = 0,
-            //    SendMethodName = "..."
-            //});
+
             return Partial("BindData", Tuple.Create(PaginatedResult, PagingInput, query.SiteId));
         }
         public async Task<IActionResult> OnPostBulkActionsAsync(string chkActionIds = "")
