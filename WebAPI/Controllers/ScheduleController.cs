@@ -9,12 +9,13 @@ namespace WebAPI.Controllers
     {
         [HttpGet("GetAllSchedule")]
         public async Task<IActionResult> GetAllSchedule(
-     [FromQuery] short? leagueId,
-     [FromQuery] DateTime? estimateStartTime)
+        [FromQuery] short? leagueId, [FromQuery] string leagueUrl,
+        [FromQuery] DateTime? estimateStartTime)
         {
             var query = new MatchGetScheduleQuery
             {
                 LeagueId = leagueId,
+                LeagueUrl = leagueUrl,
                 EstimateStartTime = estimateStartTime
             };
 

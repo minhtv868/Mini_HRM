@@ -2,15 +2,19 @@
 
 namespace Web.Domain.Enums
 {
-	public enum StatusEnum
-	{
-		[Display(Name = "Dừng Hoạt động")]
-		InActive = 1,
+    public enum StatusEnum
+    {
 
-		[Display(Name = "Hoạt động")]
-		Active = 2,
+        [Display(Name = "Hoạt động")]
+        Active = 1,
+        [Display(Name = "Dừng hoạt động")]
+        InActive = 2,
 
         [Display(Name = "Chờ kích hoạt")]
-        WaitActive = 5
+        Pending = 3,
+
+        [Display(Name = "Đã xóa")]
+        Deleted = 4
     }
+
 }

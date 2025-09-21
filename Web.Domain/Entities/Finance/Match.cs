@@ -6,6 +6,8 @@ namespace Web.Domain.Entities.Finance
     {
         public int MatchId { get; set; }
         public DateTime? EstimateStartTime { get; set; }
+        public int? LSMatchId { get; set; }
+        public string TimePlaying { get; set; }
         public short? HomeId { get; set; }
         public short? AwayId { get; set; }
         public short? LeagueId { get; set; }
@@ -19,10 +21,10 @@ namespace Web.Domain.Entities.Finance
         public string LeagueName { get; set; }
         public string LeagueImage { get; set; }
         public bool? IsLive { get; set; }
+        public byte? Status { get; set; }
         public bool? IsHot { get; set; }
-        public int? SiteId { get; set; }
         public int? CrUserId { get; set; }
-        public DateTime CrDateTime { get; set; }
+        public DateTime? CrDateTime { get; set; }
         public int? UpdUserId { get; set; }
         public DateTime? UpdDateTime { get; set; }
         public DateTime? LastUpdateTime { get; set; }

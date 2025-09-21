@@ -9,16 +9,22 @@ using Web.Application.Features.Finance.Matchs.DTOs;
 using Web.Application.Interfaces;
 using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
+using Web.Domain.Enums;
 using Web.Shared;
 
 namespace Web.Application.Features.Finance.Matchs.Queries
 {
     public record MatchGetPageQuery : BaseGetPageQuery, IRequest<PaginatedResult<MatchGetPageDto>>
     {
-        [DisplayName("Site")]
-        public short? SiteId { get; set; }
-        [DisplayName("Hình thức gửi")]
-        public byte SendMethodId { get; set; }
+        [DisplayName("Giải đấu")]
+        public short? LeagueId { get; set; }
+        [DisplayName("Đội bóng")]
+        public short? TeamId { get; set; }
+        [DisplayName("Trạng thái")]
+        public byte? Status { get; set; }
+        [DisplayName("Trận đấu")]
+        public byte? TimePlaying { get; set; }
+
 
 
     }
@@ -40,35 +46,41 @@ namespace Web.Application.Features.Finance.Matchs.Queries
         {
             var query = _unitOfWork.Repository<Match>().Entities;
             // var listSendMethod = _unitOfWork.Repository<SendMethod>().Entities;
-            if (queryInput.SiteId > 0)
+            if (queryInput.LeagueId > 0)
             {
-                query = query.Where(x => x.SiteId == queryInput.SiteId);
+                query = query.Where(x => x.LeagueId == queryInput.LeagueId);
             }
-            //if (queryInput.SendMethodId > 0)
-            //{
-            //    query = query.Where(x => x.SendMethodId == queryInput.SendMethodId);
-            //}
-            //if (!string.IsNullOrWhiteSpace(queryInput.Keywords))
-            //{
-            //    query = query.Where(x => x.MessageName.Contains(queryInput.Keywords) || x.SendFrom.Contains(queryInput.Keywords) || x.Title.Contains(queryInput.Keywords));
-            //}
-            var result = await query.OrderBy(x => x.CrDateTime).ProjectTo<MatchGetPageDto>(_mapper.ConfigurationProvider).ToPaginatedListAsync(queryInput.Page, queryInput.PageSize, cancellationToken);
-            //if (result.Data != null && result.Data.Any())
-            //{
-            //    var listUsers = await _sender.Send(new UserGetAllQuery());
-            //    foreach (var item in result.Data)
-            //    {
-            //        //if (item.SendMethodId > 0)
-            //        //{
-            //        //    item.SendMethod = listSendMethod.FirstOrDefault(x => x.SendMethodId == item.SendMethodId).SendMethodName;
-            //        //}
-            //        if (item.CrUserId > 0)
-            //        {
-            //            var crUser = listUsers.Data.FirstOrDefault(x => x.Id == item.CrUserId);
-            //            item.CrUser = crUser != null ? crUser.UserName : "...";
-            //        }
-            //    }
-            //}
+            if (queryInput.TeamId > 0)
+            {
+                query = query.Where(x => x.HomeId == queryInput.TeamId || x.AwayId == queryInput.TeamId);
+            }
+            if (queryInput.Status > 0)
+            {
+                query = query.Where(x => x.Status == queryInput.Status);
+            }
+            if (queryInput.TimePlaying > 0)
+            {
+                if (queryInput.TimePlaying == (byte)TimePlayingEnum.FT) //Đang diễn ra
+                {
+                    query = query.Where(x => x.TimePlaying == "FT");
+                }
+                if (queryInput.TimePlaying == (byte)TimePlayingEnum.NS) //Đang diễn ra
+                {
+                    query = query.Where(x => x.TimePlaying == "NS");
+                }
+            }
+            if (!string.IsNullOrEmpty(queryInput.Keywords))
+            {
+                var kw = queryInput.Keywords.Trim();
+                query = query.Where(x =>
+                    x.HomeName.Contains(kw) ||
+                    x.AwayName.Contains(kw) ||
+                    x.LeagueName.Contains(kw) ||
+                    x.MatchId.ToString().Contains(kw));
+            }
+
+            var result = await query.OrderByDescending(x => x.EstimateStartTime).ProjectTo<MatchGetPageDto>(_mapper.ConfigurationProvider).ToPaginatedListAsync(queryInput.Page, queryInput.PageSize, cancellationToken);
+
             await _auditableService.UpdateAuditableInfoAsync(result.Data);
             return result;
         }

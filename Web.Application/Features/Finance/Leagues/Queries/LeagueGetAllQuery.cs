@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Web.Application.Features.Finance.Leagues.DTOs;
 using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
+using Web.Domain.Enums;
 
 namespace Web.Application.Features.Finance.Leagues.Queries
 {
@@ -25,7 +26,7 @@ namespace Web.Application.Features.Finance.Leagues.Queries
         }
         public async Task<List<LeagueGetAllDto>> Handle(LeagueGetAllQuery request, CancellationToken cancellationToken)
         {
-            var query = _unitOfWork.Repository<League>().Entities.AsNoTracking();
+            var query = _unitOfWork.Repository<League>().Entities.AsNoTracking().Where(x => x.StatusId == (byte)StatusEnum.Active).OrderBy(x => x.SortOrder.HasValue);
             var result = await query
                  .ProjectTo<LeagueGetAllDto>(_mapper.ConfigurationProvider)
                  .ToListAsync(cancellationToken);

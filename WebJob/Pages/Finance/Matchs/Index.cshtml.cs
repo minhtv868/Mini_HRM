@@ -4,8 +4,6 @@ using Web.Application.Features.Finance.Leagues.Queries;
 using Web.Application.Features.Finance.Matchs.Commands;
 using Web.Application.Features.Finance.Matchs.DTOs;
 using Web.Application.Features.Finance.Matchs.Queries;
-using Web.Application.Features.Finance.Sites.DTOs;
-using Web.Application.Features.Finance.Sites.Queries;
 using Web.Application.Features.Finance.Teams.DTOs;
 using Web.Application.Features.Finance.Teams.Queries;
 using Web.Shared;
@@ -19,7 +17,6 @@ namespace WebJob.Pages.Finance.Matchs
         [BindProperty]
         public MatchGetPageQuery Query { get; set; }
         public PaginatedResult<MatchGetPageDto> PaginatedResult;
-        public List<SiteGetAllByUserDto> SiteList;
         public List<LeagueGetAllDto> LeagueList;
         public List<TeamGetAllDto> TeamList;
         private readonly int _pageSize = AppConfig.AppSettings.PageSize;
@@ -28,15 +25,9 @@ namespace WebJob.Pages.Finance.Matchs
             Query = query;
             Query.Page = page;
             Query.PageSize = _pageSize;
-            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
-            if (SiteList != null && SiteList.Any() && Query.SiteId == null)
-            {
-                Query.SiteId = SiteList[0].SiteId;
-            }
             LeagueList = await Mediator.Send(new LeagueGetAllQuery());
             TeamList = await Mediator.Send(new TeamGetAllQuery());
             PaginatedResult = await Mediator.Send(query);
-
             PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
             return Page();
         }
@@ -50,7 +41,7 @@ namespace WebJob.Pages.Finance.Matchs
 
             PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
 
-            return Partial("BindData", Tuple.Create(PaginatedResult, PagingInput, query.SiteId));
+            return Partial("BindData", Tuple.Create(PaginatedResult, PagingInput));
         }
         public async Task<IActionResult> OnPostBulkActionsAsync(string chkActionIds = "")
         {

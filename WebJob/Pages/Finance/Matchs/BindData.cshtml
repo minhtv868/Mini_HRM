@@ -1,6 +1,6 @@
 ﻿@using Web.Application.Features.Finance.Matchs.DTOs
 
-@model Tuple<PaginatedResult<MatchGetPageDto>, PagingInput, short?>
+@model Tuple<PaginatedResult<MatchGetPageDto>, PagingInput>
 @{
     Layout = null;
 }
@@ -22,6 +22,14 @@
                                       data-ajax-begin="onBegin(this)"
                                       data-ajax-success="onSuccessed(this, xhr, true)">
                                     <div class="d-flex">
+                                        <button name="Query.Status" value="1" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-info ms-2" type="submit">
+                                            <i class="fas fa-eye"></i>
+                                            <span class="d-none d-sm-inline-block ms-1">Hiển thị</span>
+                                        </button>
+                                        <button name="Query.Status" value="2" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit">
+                                            <i class="fas fa-eye-slash"></i>
+                                            <span class="d-none d-md-inline-block ms-1">Ẩn</span>
+                                        </button>
                                         <button onclick="return confirm('Xác nhận xóa mẫu tin đã chọn !')" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit">
                                             <i class="far fa-trash-alt text-danger"></i>
                                             <span class="d-none d-md-inline-block ms-1">Xóa</span>
@@ -33,7 +41,7 @@
                             <div class="bulk-select-replace-element d-flex align-items-center">
                                 <button class="btn btn-primary no-focus ms-2" type="button"
                                         data-modal="modal-xl"
-                                        onclick="return modalGet(this, '@Url.Page(pageName: "Create",values: new { SiteId = Model.Item3}) ', 'Thêm mẫu tin')"
+                                        onclick="return modalGet(this, '@Url.Page(pageName: "Create") ', 'Thêm mẫu tin')"
                                         title="Thêm mẫu tin">
                                     <i class="fas fa-plus"></i>
                                     <span class="d-none d-sm-inline-block ms-1">Thêm</span>
@@ -54,7 +62,7 @@
             <th class="align-middle text-nowrap text-center">Đội khách</th>
             <th class="align-middle col-sm-1 text-center ">Thời gian</th>
             <th class="align-middle col-sm-1 text-center ">Thao tác</th>
-            <th class="fs-0 text-nowrap pe-3">
+            <th class="fs-0 text-nowrap pe-3 custom-table-th">
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" />
                 </div>
@@ -126,7 +134,7 @@
                             <i class="far fa-trash-alt text-danger"></i>
                         </a>
                     </td>
-                    <td class="align-middle py-3 text-nowrap" style="width:10px">
+                    <td class="align-middle py-3 text-nowrap w-10">
                         <div class="form-check mb-0">
                             <input class="form-check-input row-checkbox" type="checkbox" name="ChkActionIds" value="@item.MatchId" />
                         </div>

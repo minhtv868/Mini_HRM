@@ -3,6 +3,7 @@
     public class JobRunningHelper
     {
         public static bool JobQueueProcessJobRunning = false;
+        public static bool ProcessCrawlPrimaryLeagueJob = false;
         public static bool ProcessCrawlTopTranferGetHtmlJobRunning = false;
         public static bool ProcessGetSchedulesJob = false;
         public static bool FSPlayerGetCrawUrlByPlayer = false;
@@ -20,6 +21,7 @@
             ProcessGetSchedulesFromTemporaryDataJob = false;
 
             FSPlayerCareerTranferInjuryCrawlJob = false;
+            ProcessCrawlPrimaryLeagueJob = false;
         }
     }
 }

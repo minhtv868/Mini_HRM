@@ -26,11 +26,11 @@ namespace Web.Application.Features.Finance.Matchs.Commands
             //  .WithMessage("Cần chọn phương thức gửi")
             //  .GreaterThan((byte)0)
             //  .WithMessage("Cần chọn phương thức gửi hợp lệ");
-            RuleFor(x => x.SiteId)
-                .NotNull()
-                .WithMessage("Cần chọn site")
-                .GreaterThan((short)0)
-                .WithMessage("Cần chọn site hợp lệ");
+            //RuleFor(x => x.SiteId)
+            //    .NotNull()
+            //    .WithMessage("Cần chọn site")
+            //    .GreaterThan((short)0)
+            //    .WithMessage("Cần chọn site hợp lệ");
         }
     }
 }

@@ -1,13 +1,6 @@
-﻿using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Net;
 using System.Net.Cache;
-using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Web.Application.Settings;
 
 namespace Web.Application.Jobs.Helper
 {
@@ -63,14 +56,57 @@ namespace Web.Application.Jobs.Helper
             }
             return retVal;
         }
-        public async Task<string> CrawAsync(string url)
+        public string CrawV2(string url)
         {
             string retVal = string.Empty;
             try
             {
                 ServicePointManager.Expect100Continue = true;
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                                                        | SecurityProtocolType.Tls11
+                                                        | SecurityProtocolType.Tls12
+                                                        | SecurityProtocolType.Tls13;
+                // Skip validation of SSL/TLS certificate
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
+                HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+                request.ContentType = "application/json;charset=\"utf-8\"";
+                request.UserAgent = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36";
+
+
+                if (!string.IsNullOrEmpty(LIVESCORE_COOKIES))
+                {
+                    request.Headers.Add("cookie", LIVESCORE_COOKIES);
+                }
+
+                HttpRequestCachePolicy noCachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+                request.CachePolicy = noCachePolicy;
+
+                WebResponse response = request.GetResponse();
+                Stream data = response.GetResponseStream();
+                using (StreamReader sr = new StreamReader(data))
+                {
+                    retVal = sr.ReadToEnd();
+                }
+            }
+            catch (Exception ex)
+            {
+                //throw ex;
+            }
+            return retVal;
+        }
+        public static async Task<string> CrawAsync(string url)
+        {
+            string retVal = string.Empty;
+            try
+            {
+                ServicePointManager.Expect100Continue = true;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                                                        | SecurityProtocolType.Tls11
+                                                        | SecurityProtocolType.Tls12
+                                                        | SecurityProtocolType.Tls13;
+
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
                 HttpClientHandler handler = new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
@@ -199,6 +235,49 @@ namespace Web.Application.Jobs.Helper
             }
             return retVal;
         }
+        public static async Task<string> CrawAsync(string url, string refer)
+        {
+            string retVal = string.Empty;
+
+            try
+            {
+                // Bypass SSL certificate validation
+                HttpClientHandler handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+                };
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    // Thiết lập các header cần thiết
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+
+                    if (!string.IsNullOrEmpty(refer))
+                    {
+                        client.DefaultRequestHeaders.Referrer = new Uri(refer);
+                    }
+
+                    if (url.Contains("whoscored"))
+                    {
+                        client.DefaultRequestHeaders.Add("Cookie", WHOSCORE_COOKIES);
+                        // Bổ sung thêm header khác nếu cần
+                    }
+
+                    // Gửi yêu cầu GET
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    response.EnsureSuccessStatusCode(); // Kiểm tra lỗi HTTP
+
+                    retVal = await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error during Craw request", ex);
+            }
+
+            return retVal;
+        }
+
     }
     public class CusteredHeaderCollection : WebHeaderCollection
     {
