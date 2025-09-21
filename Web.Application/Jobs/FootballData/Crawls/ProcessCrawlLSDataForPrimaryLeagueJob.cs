@@ -52,7 +52,7 @@ namespace Web.Application.Jobs.FootballData.Crawls
                 if (listUrlCrawls != null && listUrlCrawls.Any())
                 {
                     var tasks = new List<Task>();
-                    var semaphore = new SemaphoreSlim(20); // Tối đa 20 task song song
+                    var semaphore = new SemaphoreSlim(1); // Tối đa 20 task song song
 
                     foreach (var item in listUrlCrawls)
                     {

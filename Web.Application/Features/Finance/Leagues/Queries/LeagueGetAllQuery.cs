@@ -26,7 +26,7 @@ namespace Web.Application.Features.Finance.Leagues.Queries
         }
         public async Task<List<LeagueGetAllDto>> Handle(LeagueGetAllQuery request, CancellationToken cancellationToken)
         {
-            var query = _unitOfWork.Repository<League>().Entities.AsNoTracking().Where(x => x.StatusId == (byte)StatusEnum.Active).OrderBy(x => x.SortOrder.HasValue);
+            var query = _unitOfWork.Repository<League>().Entities.AsNoTracking().Where(x => x.Status == (byte)StatusEnum.Active).OrderBy(x => x.SortOrder.HasValue);
             var result = await query
                  .ProjectTo<LeagueGetAllDto>(_mapper.ConfigurationProvider)
                  .ToListAsync(cancellationToken);

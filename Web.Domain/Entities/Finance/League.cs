@@ -15,7 +15,7 @@ namespace Web.Domain.Entities.Finance
         public byte? RelegationNum { get; set; }
         public short? SortOrder { get; set; }
         public string LivescoreNames { get; set; }
-        public byte? StatusId { get; set; }
+        public byte? Status { get; set; }
         public byte? LeagueIndex { get; set; }
         public string LeagueUrl { get; set; }
         public string LeagueArea { get; set; }
