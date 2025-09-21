@@ -45,13 +45,13 @@ namespace Web.Shared.Helpers
             }
         }
 
-        public static DateTime ToDateTime(this string input,
-                  string format = "dd-MM-yyyy")
-        {
-            DateTime.TryParseExact(input, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime resultVar);
+        //public static DateTime ToDateTime(this string input,
+        //          string format = "dd-MM-yyyy")
+        //{
+        //    DateTime.TryParseExact(input, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime resultVar);
 
-            return resultVar;
-        }
+        //    return resultVar;
+        //}
 
         public static string ToStringFormat(this DateTime dateTime, string format = "dd/MM/yyyy HH:mm")
         {
@@ -162,6 +162,17 @@ namespace Web.Shared.Helpers
             {
             }
             return RetVal;
+        }
+        public static DateTime ToDateTime(this string input,
+               string format = "dd-MM-yyyy")
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return DateTime.MinValue;
+
+            input = input.Replace("/", "-");
+            DateTime.TryParseExact(input, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime resultVar);
+
+            return resultVar;
         }
     }
 }

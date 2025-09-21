@@ -8,7 +8,7 @@
     <div class="card-header pt-1 car-header-padding">
         <form method="get" class="justify-content-between search-form">
             <div class="row gx-2 align-items-center ">
-                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-2 did-floating-label-content">
+                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-3 did-floating-label-content">
                     <select asp-for="Query.LeagueId" asp-items="@(new SelectList(Model.LeagueList, "LeagueId", "LeagueName"))"
                             class="form-select select-picker form-select-submit did-floating-select"
                             onclick="this.setAttribute('value', this.value); return false;"
@@ -18,7 +18,7 @@
 
                     <label asp-for="Query.LeagueId" class="did-floating-label"></label>
                 </div>
-                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-2 did-floating-label-content">
+                <div class="col-12 col-md-6 mb-3 col-lg-4 col-xl-3 did-floating-label-content">
                     <select asp-for="Query.TeamId" asp-items="@(new SelectList(Model.TeamList, "TeamId", "TeamName"))"
                             class="form-select select-picker form-select-submit did-floating-select"
                             onclick="this.setAttribute('value', this.value); return false;"
@@ -28,19 +28,23 @@
 
                     <label asp-for="Query.TeamId" class="did-floating-label"></label>
                 </div>
-                <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+                <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
                     <select asp-for="Query.Status" asp-items="Html.GetEnumSelectList<StatusEnum>()"
                             class="form-select form-select-submit did-floating-select">
                         <option value="0" selected>Tất cả</option>
                     </select>
                     <label asp-for="Query.Status" class="did-floating-label"></label>
                 </div>
-                <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+                <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
                     <select asp-for="Query.TimePlaying" asp-items="Html.GetEnumSelectList<TimePlayingEnum>()"
                             class="form-select form-select-submit did-floating-select">
                         <option value="0" selected>Tất cả</option>
                     </select>
                     <label asp-for="Query.TimePlaying" class="did-floating-label"></label>
+                </div>
+                <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
+                    <input asp-for="Query.EstimateStartTimeText" class="form-control datepicker flatpickr-input form-control-sm did-floating-input" data-format="d/m/Y" type="text" autocomplete="off" />
+                    <label asp-for="Query.EstimateStartTimeText" class="did-floating-label"></label>
                 </div>
                 <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content ">
                     <input class="form-control did-floating-input" asp-for="Query.Keywords" asp-placeholder-for="Query.Keywords" type="search" />
@@ -49,6 +53,12 @@
 
                 <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-3 did-floating-label-content">
                     <button class="btn btn-secondary me-1" type="submit">Tìm kiếm</button>
+                    <button type="button" class="btn btn-light"
+                            onclick="window.location.href = window.location.pathname">
+                        Xóa lọc
+                    </button>
+
+
                 </div>
             </div>
         </form>

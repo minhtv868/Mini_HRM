@@ -11,10 +11,11 @@ using Web.Application.Interfaces.Repositories.Finances;
 using Web.Domain.Entities.Finance;
 using Web.Domain.Enums;
 using Web.Shared;
+using Web.Shared.Helpers;
 
 namespace Web.Application.Features.Finance.Matchs.Queries
 {
-    public record MatchGetPageQuery : BaseGetPageQuery, IRequest<PaginatedResult<MatchGetPageDto>>
+    public record MatchGetPageQuery : BaseGetPageQuery, MediatR.IRequest<PaginatedResult<MatchGetPageDto>>
     {
         [DisplayName("Giải đấu")]
         public short? LeagueId { get; set; }
@@ -24,9 +25,8 @@ namespace Web.Application.Features.Finance.Matchs.Queries
         public byte? Status { get; set; }
         [DisplayName("Trận đấu")]
         public byte? TimePlaying { get; set; }
-
-
-
+        [DisplayName("Thời gian")]
+        public string EstimateStartTimeText { get; set; }
     }
     internal class MatchGetPageQueryHandler : IRequestHandler<MatchGetPageQuery, PaginatedResult<MatchGetPageDto>>
     {
@@ -77,6 +77,12 @@ namespace Web.Application.Features.Finance.Matchs.Queries
                     x.AwayName.Contains(kw) ||
                     x.LeagueName.Contains(kw) ||
                     x.MatchId.ToString().Contains(kw));
+            }
+            if (!string.IsNullOrEmpty(queryInput.EstimateStartTimeText))
+            {
+                var date = queryInput.EstimateStartTimeText.ToDateTime().Date;
+                query = query.Where(x => x.EstimateStartTime.HasValue &&
+                                         x.EstimateStartTime.Value.Date == date);
             }
 
             var result = await query.OrderByDescending(x => x.EstimateStartTime).ProjectTo<MatchGetPageDto>(_mapper.ConfigurationProvider).ToPaginatedListAsync(queryInput.Page, queryInput.PageSize, cancellationToken);
