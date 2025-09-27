@@ -1,0 +1,150 @@
+﻿
+@using Web.Application.Features.Finance.Departments.DTOs
+@model Tuple<PaginatedResult<DepartmentGetPageDto>, PagingInput, int?>
+@{
+    Layout = null;
+}
+<table id="sticky-table" class="main-table table table-striped table-hover mb-0 responsive-table">
+    <thead class="text-black sticky-header">
+        <tr>
+            <th class="pt-1 pb-1 no-border text-center" colspan="6">
+                <div class="th-inner">
+                    <div class="row flex-between-center mg-r-1">
+                        <div class="col-auto col-sm-auto d-flex align-items-center pe-0">
+                            <h6 class="mb-0 text-nowrap total-rows fw-semi-bold ps-1">Tìm thấy <span
+                                    class="text-danger">@Model.Item1.TotalCount.NumberFormat()</span> bản ghi</h6>
+                        </div>
+                        <div class="col-auto text-end ps-0 justify-content-end">
+                            <div class="d-flex align-items-center" id="table-replace-element">
+                                <div class="bulk-select-actions d-none">
+                                    <form method="post" data-ajax="true"
+                                        data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "BulkActions")"
+                                        data-ajax-method="post" data-ajax-begin="onBegin(this)"
+                                        data-ajax-success="onSuccessed(this, xhr, true)">
+                                        <div class="d-flex">
+                                            <button onclick="return confirm('Xác nhận xóa dữ liệu đã chọn !')"
+                                                class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2"
+                                                type="submit">
+                                                <i class="far fa-trash-alt text-danger"></i>
+                                                <span class="d-none d-md-inline-block ms-1">Xóa</span>
+                                            </button>
+                                            <input class="ChkActionIds" type="hidden" name="ChkActionIds" />
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="bulk-select-replace-element d-flex align-items-center">
+                                    <button class="btn btn-primary no-focus ms-2" type="button"
+                                            data-path="@Url.Page(pageName: "Create")"
+                                            onclick="return modalLoad(this)"
+                                            title="Thêm dữ liệu mới">
+                                        <i class="fas fa-plus"></i>
+                                        <span class="d-none d-sm-inline-block ms-1">Thêm</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </th>
+        </tr>
+        <tr class="columns-header">
+            <th class="align-middle text-center col-stt">STT</th>
+            <th class="align-middle text-start">Tên</th>
+            <th class="align-middle text-start">Mô tả</th>
+            <th class="align-middle text-center col-info col-2">Thông tin</th>
+            <th class="align-middle text-center col-action">Thao tác</th>
+            <th class="align-middle text-center col-checkbox">
+                <div class="form-check d-flex justify-content-center align-items-center">
+                    <input class="form-check-input" type="checkbox" />
+                </div>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Item1.Data.IsAny())
+        {
+            int displayIndex = (Model.Item2.Page - 1) * Model.Item2.PageSize;
+            foreach (var item in Model.Item1.Data)
+            {
+                displayIndex++;
+                <tr class="align-middle">
+                    <td class="text-center col-stt text-ellipsis" data-label="STT" title="@displayIndex">@displayIndex
+                    </td>
+                    <td class="text-start" data-label="Tên">
+                        <h6 class="text-black">@item.DepartmentName</h6>
+                    </td>
+                    <td class="text-start" data-label="Mô tả">
+                        <span class="text-black">@item.DepartmentDesc</span>
+                    </td>
+                  @*   <td class="text-center col-order text-ellipsis" data-label="Thứ tự hiển thị" title="@item.DisplayOrder">
+                        @item.DisplayOrder</td> *@
+                    <td class="text-center col-info col-3" data-label="Thông tin">
+                        <div class="info-block-responsive">
+                          <div class="info-group mb-1">
+                            @if (!string.IsNullOrEmpty(item.AuditableInfo?.CreatedByUserName))
+                             {
+                             <div class="info-sub text-ellipsis small text-black" title="Tạo bởi: @item.AuditableInfo.CreatedByUserName">
+                               <i class="fas fa-user-edit me-1"></i>@item.AuditableInfo.CreatedByUserName
+                               </div>
+                            }
+        
+                            @if (item.CrDateTime != null)
+                            {
+                            <div class="info-sub text-ellipsis small text-black" title="Thời gian tạo: @item.CrDateTime.ToStringFormat()">
+                            <i class="fas fa-calendar-plus me-1"></i>@item.CrDateTime.ToStringFormat()
+                            </div>
+                             }
+     
+                         </div>
+
+                        <div class="info-group">
+                           @if (!string.IsNullOrEmpty(item.AuditableInfo?.UpdatedByUserName))
+                            {
+                            <div class="info-sub text-ellipsis small text-black" title="Cập nhật bởi: @item.AuditableInfo.UpdatedByUserName">
+                                <i class="fas fa-user-cog me-1"></i>@item.AuditableInfo.UpdatedByUserName
+                             </div>
+                            }
+       
+                            @if (item.UpdDateTime != null)
+                           {
+                           <div class="info-sub text-ellipsis small text-black" title="Thời gian cập nhật: @item.UpdDateTime.ToStringFormat()">
+                            <i class="fas fa-calendar-check me-1"></i>@item.UpdDateTime.ToStringFormat()
+                           </div>
+                          }
+            
+                        </div>
+                        </div>
+                    </td>
+                    <td class="text-center col-action" data-label="Thao tác">
+                        <button class="btn btn-link p-0" type="button"
+                                data-path="@Url.Page(pageName: "Edit", values: new { id = item.DepartmentId })"
+                                onclick="return modalLoad(this)"
+                                title="Cập nhật dữ liệu">
+                            <i class="far fa-edit"></i>
+                        </button>
+                        <a href="javascript:void(0)" class="btn btn-link p-0 ms-2" data-ajax="true"
+                            data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "Delete", values: new { id = item.DepartmentId })"
+                            data-ajax-method="post" data-ajax-begin="setRequestHeader(this, xhr)"
+                            data-ajax-success="onSuccessed(this, xhr, false, true)" data-ajax-confirm="Xác nhận xóa dữ liệu"
+                            title="Xóa dữ liệu">
+                            <i class="far fa-trash-alt text-danger"></i>
+                        </a>
+                    </td>
+                    <td class="text-center col-checkbox">
+                        <div class="form-check mb-0 d-flex justify-content-center">
+                            <input class="form-check-input row-checkbox" type="checkbox" name="ChkActionIds"
+                                value="@item.DepartmentId" />
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr class="align-middle text-warning fs--1 not-found text-center">
+                <td colspan="7">Không tìm thấy dữ liệu phù hợp.</td>
+            </tr>
+        }
+    </tbody> 
+</table>
+@await Html.PartialAsync("_PaginationPartial", Model.Item2)

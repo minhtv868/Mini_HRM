@@ -1,6 +1,6 @@
-﻿@using Web.Application.Features.Finance.Matchs.DTOs
+﻿@using Web.Application.Features.Finance.Medias.DTOs
 
-@model Tuple<PaginatedResult<MatchGetPageDto>, PagingInput>
+@model Tuple<PaginatedResult<MediaGetPageDto>, PagingInput, short?>
 @{
     Layout = null;
 }
@@ -22,14 +22,6 @@
                                       data-ajax-begin="onBegin(this)"
                                       data-ajax-success="onSuccessed(this, xhr, true)">
                                     <div class="d-flex">
-                                        <button name="Query.Status" value="1" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-info ms-2" type="submit">
-                                            <i class="fas fa-eye"></i>
-                                            <span class="d-none d-sm-inline-block ms-1">Hiển thị</span>
-                                        </button>
-                                        <button name="Query.Status" value="2" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit">
-                                            <i class="fas fa-eye-slash"></i>
-                                            <span class="d-none d-md-inline-block ms-1">Ẩn</span>
-                                        </button>
                                         <button onclick="return confirm('Xác nhận xóa mẫu tin đã chọn !')" class="btn btn-sm btn-falcon-default rounded-pill m-button-hover-warning ms-2" type="submit">
                                             <i class="far fa-trash-alt text-danger"></i>
                                             <span class="d-none d-md-inline-block ms-1">Xóa</span>
@@ -40,8 +32,8 @@
                             </div>
                             <div class="bulk-select-replace-element d-flex align-items-center">
                                 <button class="btn btn-primary no-focus ms-2" type="button"
-                                        data-modal="modal-xl"
-                                        onclick="return modalGet(this, '@Url.Page(pageName: "Create") ', 'Thêm mẫu tin')"
+                                        data-modal="modal-lg"
+                                        onclick="return modalGet(this, '@Url.Page(pageName: "Create",values: new { SiteId = Model.Item3}) ', 'Thêm mẫu tin')"
                                         title="Thêm mẫu tin">
                                     <i class="fas fa-plus"></i>
                                     <span class="d-none d-sm-inline-block ms-1">Thêm</span>
@@ -54,15 +46,14 @@
         </tr>
         <tr>
             
-            <th class="px-1 text-center">ID</th>
+            <th class="px-1 text-center">STT</th>
+            <th class="align-middle text-nowrap text-center">Tên</th>
+            <th class="align-middle text-nowrap text-center">Gửi từ</th>
+            <th class="align-middle text-nowrap text-center">Tiêu đề</th>
+            <th class="align-middle text-nowrap text-center">Hình thức gửi</th>
             <th class="align-middle text-nowrap text-center">Thời gian</th>
-            <th class="align-middle text-nowrap text-center">Giải đấu</th>
-            <th class="align-middle text-nowrap text-center">Chủ nhà</th>
-            <th class="align-middle text-nowrap text-center">Tỉ số</th>
-            <th class="align-middle text-nowrap text-center">Đội khách</th>
-            <th class="align-middle col-sm-1 text-center ">Thời gian</th>
             <th class="align-middle col-sm-1 text-center ">Thao tác</th>
-            <th class="fs-0 text-nowrap pe-3 custom-table-th">
+            <th class="fs-0 text-nowrap pe-3">
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" />
                 </div>
@@ -76,23 +67,8 @@
             @foreach (var item in Model.Item1.Data)
             {
                 stt++;
-                <tr id="@item.MatchId" class="align-middle">
-                    <td style="text-align:center">@item.MatchId</td>
-                    <td  >
-                        <span class="mb-0 fw-semi-bold text-wrap">@item.EstimateStartTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
-                    </td>
-                    <td class="text-nowrap" >
-                        <span class="mb-0  text-wrap">@item.LeagueName</span>
-                    </td>
-                    <td class="text-nowrap">
-                        <span class="mb-0 text-wrap">@item.HomeName</span>
-                    </td>
-                    <td>
-                        <span class="mb-0 fw-semi-bold text-wrap">@item.HomeGoals - @item.AwayGoals</span>
-                    </td>
-                    <td class="text-nowrap">
-                        <span class="mb-0 text-wrap">@item.AwayName</span>
-                    </td>
+                <tr id="@item.MediaId" class="align-middle">
+                    <td style="text-align:center">@stt</td>
                     <td class="align-middle text-nowrap text-center">
                         <small class="mb-0 fs--1" title="Người tạo">
                             <i class="fas fa-user-plus text-500 fa-sm"></i> <span class="mb-0" title="Người tạo">@item.AuditableInfo.CreatedByUserName</span>
@@ -100,32 +76,33 @@
                         <small class="mb-0 fs--1 " title="Thời gian tạo: @item.CrDateTime.ToStringFormat()">
                             <span class="mb-0">@item.CrDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
                         </small> <br />
-                       
-                        @if(item.UpdDateTime != null)
+
+                        @if (item.UpdDateTime != null)
                         {
                             <small class="mb-0 fs--1" title="Người cập nhật">
                                 <i class="fas fa-user-plus text-500 fa-sm"></i> <span class="mb-0" title="Người cập nhật">@item.AuditableInfo.UpdatedByUserName</span>
                             </small>
-                
+
                             <br />
-                             <small class="mb-0 fs--1 " title="Thời gian cập nhật: @item.UpdDateTime.ToStringFormat()">
-                            <span class="mb-0">@item.UpdDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
-                        </small> <br />
+                            <small class="mb-0 fs--1 " title="Thời gian cập nhật: @item.UpdDateTime.ToStringFormat()">
+                                <span class="mb-0">@item.UpdDateTime.ToStringFormat("dd/MM/yyyy HH:mm")</span>
+                            </small>
+
+                            <br />
                         }
-                       
-                       
+
+
                     </td>
-                   
                     <td class="align-middle white-space-nowrap text-center pe-3">
                         <button class="btn btn-link p-0 ms-1" type="button"
-                                data-modal="modal-xl"
-                                onclick="return modalGet(this, '@Url.Page(pageName:"Edit", values: new { id = item.MatchId })', 'Cập nhật mẫu tin')"
+                                data-modal="modal-lg"
+                                onclick="return modalGet(this, '@Url.Page(pageName:"Edit", values: new { id = item.MediaId })', 'Cập nhật mẫu tin')"
                                 title="Cập nhật mẫu tin">
                             <i class="far fa-edit"></i>
                         </button>
                         <a href="javascript:void(0)" class="btn btn-link p-0 ms-1"
                            data-ajax="true"
-                           data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "Delete", values: new { id = item.MatchId })"
+                           data-ajax-url="@Url.Page(pageName: "Index", pageHandler: "Delete", values: new { id = item.MediaId })"
                            data-ajax-method="post"
                            data-ajax-begin="setRequestHeader(this, xhr)"
                            data-ajax-success="onSuccessed(this, xhr, false, true)"
@@ -134,9 +111,9 @@
                             <i class="far fa-trash-alt text-danger"></i>
                         </a>
                     </td>
-                    <td class="align-middle py-3 text-nowrap w-10">
+                    <td class="align-middle py-3 text-nowrap" style="width:10px">
                         <div class="form-check mb-0">
-                            <input class="form-check-input row-checkbox" type="checkbox" name="ChkActionIds" value="@item.MatchId" />
+                            <input class="form-check-input row-checkbox" type="checkbox" name="ChkActionIds" value="@item.MediaId" />
                         </div>
                     </td>
                 </tr>

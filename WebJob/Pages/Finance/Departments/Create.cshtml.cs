@@ -1,34 +1,33 @@
 using FluentValidation;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Web.Application.Features.Finance.MessageTemplates.Commands;
+using Web.Application.Features.Finance.Departments.Commands;
 using Web.Application.Features.Finance.Sites.DTOs;
 using Web.Application.Features.Finance.Sites.Queries;
 using WebJob.Models;
 
-namespace WebJob.Pages.Finance.MessageTemplates
+namespace WebJob.Pages.Finance.Departments
 {
     public class CreateModel : BasePageModel
     {
+        private readonly IValidator<DepartmentCreateCommand> _validator;
         public List<SiteGetAllByUserDto> SiteList;
-        public IValidator<MessageTemplateCreateCommand> _validator;
-
-        public CreateModel(IMediator mediator, IValidator<MessageTemplateCreateCommand> validator)
+        public CreateModel(IValidator<DepartmentCreateCommand> validator)
         {
             _validator = validator;
         }
+
         [BindProperty]
-        public new MessageTemplateCreateCommand Command { get; set; }
-        public async Task<IActionResult> OnGet(short siteId = 0)
+        public new DepartmentCreateCommand Command { get; set; }
+        public async Task<IActionResult> OnGet(int siteId)
         {
-            Command = new MessageTemplateCreateCommand();
+            Command = new DepartmentCreateCommand();
             SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
             Command.SiteId = siteId;
             return Page();
         }
+
         public async Task<IActionResult> OnPostAsync()
         {
-
             var resultValidator = await _validator.ValidateAsync(Command);
 
             if (!resultValidator.IsValid)

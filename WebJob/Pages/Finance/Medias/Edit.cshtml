@@ -1,0 +1,27 @@
+﻿@page
+@model WebJob.Pages.Finance.Medias.EditModel
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "Edit")"
+      data-ajax-method="post"
+      data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr)">
+    <div class="modal-header">
+        <h5 class="modal-title">Sửa mẫu tin <small id="progress" class="ms-2 fs--1 text-primary"></small></h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body modal-dialog-scrollable mt-0">
+        <div class="row gx-2">
+            <input asp-for="Command.MediaId" type="hidden"/>
+            <input type="hidden" asp-for="Command.SiteId" />
+           
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>

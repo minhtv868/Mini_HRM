@@ -1851,6 +1851,229 @@ td > * > img {
     max-width: 550px;
 }
 
-td > * > *   > img {
+td > * > * > img {
     max-width: 550px;
+}
+
+
+
+
+
+/* 27/9 *
+/* Dùng cho cột số thứ tự (STT) */
+.col-stt {
+    width: 60px;
+    min-width: 40px;
+    max-width: 80px;
+}
+
+/* Dùng cho cột Thứ tự hiển thị */
+.col-order {
+    width: 80px;
+    min-width: 50px;
+    max-width: 100px;
+}
+
+/* Dùng cho cột thao tác */
+.col-action {
+    width: 80px;
+    min-width: 60px;
+    max-width: 100px;
+    text-align: center;
+}
+
+/* Dùng cho cell cần thu gọn, hiển thị ... nếu quá dài */
+.text-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.col-info {
+    min-width: 140px;
+    max-width: 180px;
+    width: 180px;
+    white-space: normal;
+}
+
+    .col-info .info-sub {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+.info-block-responsive {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.col-checkbox {
+    width: 44px;
+    min-width: 36px;
+    max-width: 56px;
+    text-align: center;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+    .col-stt,
+    .col-order,
+    .col-action,
+    .text-ellipsis {
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .col-info {
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .info-block-responsive {
+        gap: 2px;
+    }
+
+    /* Ẩn các hàng tiêu đề cột sticky, chỉ giữ hàng đầu */
+    .sticky-header tr:not(:first-child),
+    .sticky-header thead tr:not(:first-child) {
+        display: none !important;
+    }
+
+    .sticky-header tr:first-child,
+    .sticky-header thead tr:first-child {
+        display: table-row !important;
+    }
+
+    .sticky-header {
+        display: table-header-group !important;
+    }
+
+    /* Bảng responsive: stack cell, không scroll ngang */
+    table.responsive-table,
+    table.responsive-table tbody,
+    table.responsive-table tr,
+    table.responsive-table td {
+        display: block;
+        width: 100%;
+    }
+
+    table.responsive-table {
+        border: 0;
+    }
+
+        table.responsive-table tr {
+            margin-bottom: .75rem;
+            border: 1px solid rgba(0,0,0,.08);
+            border-radius: .25rem;
+        }
+
+        table.responsive-table td {
+            position: relative;
+            padding-left: 50% !important;
+            text-align: left !important;
+            white-space: normal !important;
+            background: transparent !important;
+        }
+
+            table.responsive-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: .75rem;
+                top: 50%;
+                transform: translateY(-50%);
+                width: calc(50% - 1rem);
+                font-weight: 600;
+                color: #495057;
+                text-align: left;
+                white-space: normal;
+            }
+
+            table.responsive-table td.text-nowrap,
+            table.responsive-table td.white-space-nowrap {
+                white-space: normal !important;
+            }
+
+            table.responsive-table td.p-0 {
+                padding: .5rem .75rem !important;
+            }
+
+        /* Tổng số bản ghi + Button Thêm: full width, căn đều, phân biệt filter */
+        table.responsive-table thead tr:first-child th,
+        .sticky-header tr:first-child th {
+            width: 100vw !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+            padding: 12px 16px !important;
+            background: #fff !important;
+            border-right: none !important;
+            border-top: 2px solid #e9ecef !important;
+            margin-top: 8px !important;
+        }
+
+            table.responsive-table thead tr:first-child th .th-inner,
+            .sticky-header tr:first-child th .th-inner {
+                width: 100%;
+                display: flex !important;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 0;
+            }
+
+            table.responsive-table thead tr:first-child th .row,
+            .sticky-header tr:first-child th .row,
+            table.responsive-table thead tr:first-child th .col-auto,
+            .sticky-header tr:first-child th .col-auto {
+                display: contents !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+    .bulk-select-replace-element {
+        margin-left: 0 !important;
+    }
+
+    /* Loại bỏ border phải của cell khi responsive */
+    table.responsive-table td,
+    table.responsive-table th {
+        border-right: none !important;
+    }
+
+    /* Màu nền row luân phiên, toàn bộ cell nhận màu từ <tr> */
+    table.responsive-table tbody tr {
+        background: #f8f9fa !important;
+    }
+
+        table.responsive-table tbody tr:nth-child(odd) {
+            background: #fff !important;
+        }
+
+    table.responsive-table tbody td,
+    table.responsive-table tbody td * {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    table.responsive-table thead tr:first-child th .th-inner .total-rows {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    /* Tạo khoảng cách giữa tổng số bản ghi và row đầu tiên */
+    table.responsive-table thead tr:first-child th {
+        margin-bottom: 8px !important;
+        border-bottom: 1px solid #e9ecef !important;
+    }
+
+    th.col-checkbox,
+    td.col-checkbox {
+        display: none !important;
+    }
 }

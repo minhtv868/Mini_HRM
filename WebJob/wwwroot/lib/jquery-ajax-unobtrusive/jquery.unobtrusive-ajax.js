@@ -1,4 +1,4 @@
-// Unobtrusive Ajax support library for jQuery
+﻿// Unobtrusive Ajax support library for jQuery
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 // @version v3.2.6
@@ -73,12 +73,114 @@
     }
 
     function asyncRequest(element, options) {
-        var confirm, loading, method, duration;
+        var confirm, loading, method, duration, progress;
 
-        confirm = element.getAttribute("data-ajax-confirm");
-        if (confirm && !window.confirm(confirm)) {
-            return;
+        //if (confirm && !window.confirm(confirm)) {
+        //    return;
+        //}
+
+        loading = $(element.getAttribute("data-ajax-loading"));
+        duration = parseInt(element.getAttribute("data-ajax-loading-duration"), 10) || 0;
+        progress = $(element.getAttribute("data-ajax-progress"));
+
+        $.extend(options, {
+            type: element.getAttribute("data-ajax-method") || undefined,
+            url: element.getAttribute("data-ajax-url") || undefined,
+            cache: (element.getAttribute("data-ajax-cache") || "").toLowerCase() === "true",
+            beforeSend: function (xhr) {
+                var result;
+                asyncOnBeforeSend(xhr, method);
+                result = getFunction(element.getAttribute("data-ajax-begin"), ["xhr"]).apply(element, arguments);
+                if (result !== false) {
+                    loading.show(duration);
+                }
+                return result;
+            },
+            complete: function () {
+                loading.hide(duration);
+                getFunction(element.getAttribute("data-ajax-complete"), ["xhr", "status"]).apply(element, arguments);
+            },
+            success: function (data, status, xhr) {
+                asyncOnSuccess(element, data, xhr.getResponseHeader("Content-Type") || "text/html");
+                getFunction(element.getAttribute("data-ajax-success"), ["data", "status", "xhr"]).apply(element, arguments);
+            },
+            error: function () {
+                getFunction(element.getAttribute("data-ajax-failure"), ["xhr", "status", "error"]).apply(element, arguments);
+            }
+        });
+
+        options.data.push({ name: "X-Requested-With", value: "XMLHttpRequest" });
+
+        method = options.type.toUpperCase();
+        if (!isMethodProxySafe(method)) {
+            options.type = "POST";
+            options.data.push({ name: "X-HTTP-Method-Override", value: method });
         }
+
+        // change here:
+        // Check for a Form POST with enctype=multipart/form-data
+        // add the input file that were not previously included in the serializeArray()
+        // set processData and contentType to false
+        var $element = $(element);
+        if ($element.is("form") && $element.attr("enctype") == "multipart/form-data") {
+            var formdata = new FormData();
+            $.each(options.data, function (i, v) {
+                formdata.append(v.name, v.value);
+            });
+            $("input[type=file]", $element).each(function () {
+                var file = this;
+                $.each(file.files, function (n, v) {
+                    formdata.append(file.name, v);
+                });
+            });
+            $.extend(options, {
+                processData: false,
+                contentType: false,
+                data: formdata,
+                xhr: function () {
+                    var icXhr = $.ajaxSettings.xhr();
+                    if (icXhr.upload) {
+                        // For handling the progress of the upload
+                        icXhr.upload.addEventListener('progress', function (event) {
+                            let timer;
+                            if (event.lengthComputable) {
+
+                                if (timer) {
+                                    clearTimeout(timer);
+                                }
+
+                                const progressPercentage = Math.round((event.loaded / event.total) * 100);
+
+                                progress.text(`Đã tải được ${progressPercentage} %`);
+
+                                if (progressPercentage == 100) {
+
+                                    setTimeout(function () {
+                                        progress.text('');
+                                    }, 1000);
+
+                                }
+                            }
+                        }, false);
+                    }
+                    return icXhr;
+                }
+            });
+            //$.extend(options, {
+            //    processData: false,
+            //    contentType: false,
+            //    data: formdata
+            //});
+        }
+        // end change
+
+        $.ajax(options);
+
+        return false;
+    }
+
+    function asyncRequestV2(element, options) {
+        var loading, method, duration;
 
         loading = $(element.getAttribute("data-ajax-loading"));
         duration = parseInt(element.getAttribute("data-ajax-loading-duration"), 10) || 0;
@@ -151,13 +253,179 @@
 
     $(document).on("click", "a[data-ajax=true]", function (evt) {
         evt.preventDefault();
-        asyncRequest(this, {
-            url: this.href,
-            type: "GET",
-            data: []
-        });
+
+        let self = this, confirm = self.getAttribute("data-ajax-confirm"), message = self.getAttribute("data-ajax-message") || 'Dữ liệu đã xóa sẽ không thể phục hồi !'
+
+        if (this.classList.contains('publish-news') || this.classList.contains('add-docstandard')) {
+            return;
+        }
+
+        if (confirm) {
+            let buttons = {
+                'confirm': {
+                    text: "Đồng ý",
+                    btnClass: 'btn btn-danger',
+                    keys: ['enter'],
+                    action: function () {
+                        asyncRequest(self, {
+                            url: self.href,
+                            type: "GET",
+                            data: []
+                        });
+                    }
+                }
+            }
+
+            showMessage({
+                title: confirm,
+                icon: 'fa fa-question-circle',
+                columnClass: 'col-md-6 col-md-offset-3',
+                message: message,
+                buttons
+            })
+        } else {
+            asyncRequest(self, {
+                url: self.href,
+                type: "GET",
+                data: []
+            });
+        }
     });
 
+
+    $(document).on("click", "a.publish-news[data-ajax=true]", function (evt) {
+        evt.preventDefault();
+        let self = this, minCount = 300, textCount = $(evt.target).attr('data-text-count') || 0,
+            confirm = evt.target.getAttribute("data-ajax-confirm"),
+            confirmCallback = evt.target.getAttribute("data-ajax-confirm-callback")
+
+        if (confirm) {
+            $.confirm({
+                title: 'Xác nhận?',
+                columnClass: 'col-md-6 col-md-offset-3',
+                content: confirm,
+                type: 'white',
+                onClose: function () {
+                    return false
+                },
+                buttons: {
+                    ok: {
+                        text: "Đồng ý",
+                        btnClass: 'btn btn-blue',
+                        keys: ['enter'],
+                        action: function () {
+                            if (confirmCallback) {
+                                if (textCount < minCount) {
+
+                                    $.confirm({
+                                        title: 'Xác nhận?',
+                                        columnClass: 'col-md-6 col-md-offset-3',
+                                        content: `Bài viết này ngắn hơn ${minCount} từ.<br/> Nội dung quá ngắn có thể không cung cấp đủ thông tin cho người đọc.<br/> Kiểm tra lại trước khi publish để tránh xuất bản nội dung kém chất lượng.`,
+                                        type: 'white',
+                                        onClose: function () {
+                                            isSubmit = false
+                                        },
+                                        buttons: {
+                                            ok: {
+                                                text: "Vẫn publish",
+                                                btnClass: 'btn btn-danger',
+                                                keys: ['enter'],
+                                                action: function () {
+                                                    asyncRequestV2(self, {
+                                                        url: self.href,
+                                                        type: "GET",
+                                                        data: []
+                                                    });
+                                                }
+                                            },
+                                            addcontent: {
+                                                text: 'Kiểm tra lại',
+                                                btnClass: 'btn-blue',
+                                                keys: ['enter'],
+                                                action: function () {
+
+                                                }
+                                            }
+                                        },
+                                    })
+                                } else {
+                                    asyncRequestV2(self, {
+                                        url: self.href,
+                                        type: "GET",
+                                        data: []
+                                    });
+                                }
+                            }
+                            else {
+                                asyncRequestV2(self, {
+                                    url: self.href,
+                                    type: "GET",
+                                    data: []
+                                });
+                            }
+                        }
+                    },
+                    cancel: {
+                        text: "Đóng"
+                    }
+                },
+            })
+        }
+    });
+    $(document).on("click", "a.add-docstandard[data-ajax=true]", function (evt) {
+        evt.preventDefault();
+        let self = this,
+            confirm = evt.target.getAttribute("data-ajax-confirm"),
+            message = self.getAttribute("data-ajax-message") || 'Chỉ tạo số hóa với các văn bản đã có file docx !',
+            urlajax = self.getAttribute("data-ajax-url");
+
+        if (confirm) {
+            let buttons = {
+                'confirm': {
+                    text: "Chỉ tách nội dung",
+                    btnClass: 'btn btn-danger',
+                    keys: ['enter'],
+                    action: function () {
+                        urlajax = urlajax + '&fileTypeId=1';
+                        self.setAttribute("data-ajax-url", urlajax);
+                        asyncRequest(self, {
+                            url: urlajax,
+                            type: "POST",
+                            data: []
+                        });
+                    }
+                },
+                'confirm2': {
+                    text: "Tách cả phụ lục",
+                    btnClass: 'btn btn-danger',
+                    action: function () {
+                        urlajax = urlajax + '&fileTypeId=3';
+                        self.setAttribute("data-ajax-url", urlajax);
+                        asyncRequest(self, {
+                            url: urlajax,
+                            type: "POST",
+                            data: []
+                        });
+                    }
+                }
+            }
+            showMessage({
+                title: confirm,
+                icon: 'fa fa-question-circle',
+                columnClass: 'col-md-6 col-md-offset-3',
+                message: message,
+                autoClose: 'close|30000',
+                buttons
+            });
+        }
+        else {
+            asyncRequest(self, {
+                url: self.href,
+                type: "GET",
+                data: []
+            });
+        }
+    });
     $(document).on("click", "form[data-ajax=true] input[type=image]", function (evt) {
         var name = evt.target.name,
             target = $(evt.target),
@@ -196,6 +464,7 @@
         if (!isCancel && !validate(this)) {
             return;
         }
+
         asyncRequest(this, {
             url: this.action,
             type: this.method || "GET",

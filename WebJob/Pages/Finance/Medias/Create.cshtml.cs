@@ -1,28 +1,30 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Web.Application.Features.Finance.MessageTemplates.Commands;
-using Web.Application.Features.Finance.Sites.DTOs;
-using Web.Application.Features.Finance.Sites.Queries;
+using Web.Application.Features.Finance.Medias.Commands;
 using WebJob.Models;
 
-namespace WebJob.Pages.Finance.MessageTemplates
+namespace WebJob.Pages.Finance.Medias
 {
     public class CreateModel : BasePageModel
     {
-        public List<SiteGetAllByUserDto> SiteList;
-        public IValidator<MessageTemplateCreateCommand> _validator;
+        private readonly IMediator _mediator;
+        //public List<SiteGetAllByUserDto> SiteList;
+        //public List<SendMethodGetAllDto> SendMethodList;
+        public IValidator<MediaCreateCommand> _validator;
 
-        public CreateModel(IMediator mediator, IValidator<MessageTemplateCreateCommand> validator)
+        public CreateModel(IMediator mediator, IValidator<MediaCreateCommand> validator)
         {
+            _mediator = mediator;
             _validator = validator;
         }
         [BindProperty]
-        public new MessageTemplateCreateCommand Command { get; set; }
+        public new MediaCreateCommand Command { get; set; }
         public async Task<IActionResult> OnGet(short siteId = 0)
         {
-            Command = new MessageTemplateCreateCommand();
-            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
+            Command = new MediaCreateCommand();
+            //SiteList = (await Mediator.Send(new SiteGetAllByUserQuery())).Where(x => x.SiteId > 0).ToList();
+            //SendMethodList = await Mediator.Send(new SendMethodGetAllQuery());
             Command.SiteId = siteId;
             return Page();
         }
