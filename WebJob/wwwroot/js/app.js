@@ -3375,7 +3375,7 @@ modalGet = (element, path, title, callback) => {
             initAutocomplete()
 
             initTooltip()
-            
+
             initTooltipDocProperties()
 
             initTooltipDocProperties2()
@@ -5401,7 +5401,7 @@ initSelect2AutoComplete = (elements) => {
                 }
 
                 self.select2(options).on("select2:select", function (e) {
-                   
+
                     var $container = $(this).next().find('.select2-selection__rendered');
                     $container.find('li.select2-selection__choice').sort(function (a, b) {
                         return -1;
@@ -6921,7 +6921,7 @@ CalulateMoneyVAT = () => {
     var SaleValue = parseInt(SaleValueText.val().replaceAll(".", ""));
     var salePersentValue = parseInt(salePersent.val());
     console.log(CSKHorderAmount.val())
-   var orderValue = CSKHorderAmountValue;
+    var orderValue = CSKHorderAmountValue;
     if (CSKHorderAmountValue != undefined && CSKHorderAmountValue > 0) {
         if (VATPersentValue > 0) {
             orderValue = (CSKHorderAmountValue / (1 + (VATPersentValue / 100)));
@@ -7022,3 +7022,45 @@ function toggleFullscreen(btn) {
         content.classList.add('col-6');
     }
 }
+$(document).on('click', 'button[data-confirm]', function (e) {
+    var self = $(this);
+    var confirmTitle = self.data('confirm');
+    var message = self.data('message') || '';
+    var form = self.closest('form');
+
+    e.preventDefault();
+
+    let buttons = {
+        confirm: {
+            text: "Đồng ý",
+            btnClass: 'btn btn-danger',
+            keys: ['enter'],
+            action: function () {
+
+                // Đồng bộ dữ liệu CKEditor về textarea trước khi submit
+                for (let instance in CKEDITOR.instances) {
+                    CKEDITOR.instances[instance].updateElement();
+                }
+
+                form.find('input[type="hidden"][data-temp-submit]').remove();
+
+                $('<input>', {
+                    type: 'hidden',
+                    name: self.attr('name'),
+                    value: self.val(),
+                    'data-temp-submit': true
+                }).appendTo(form);
+
+                form.trigger('submit');
+            }
+        }
+    };
+
+    showMessage({
+        title: confirmTitle,
+        icon: 'fa fa-question-circle',
+        columnClass: 'col-md-6 col-md-offset-3',
+        message: message,
+        buttons: buttons
+    });
+});
