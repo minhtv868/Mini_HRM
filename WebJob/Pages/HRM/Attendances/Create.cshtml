@@ -1,0 +1,49 @@
+﻿@page
+@model WebJob.Pages.HRM.Attendances.CreateModel
+@{
+}
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "Create")"
+      data-ajax-method="post"
+      data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr)">
+    <div class="modal-header">
+        <h5 class="modal-title">Thêm phòng ban</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body mt-0">
+        <div class="row gx-2">
+            <div class="col-12 mb-3 did-floating-label-content">
+                <select asp-for="Command.SiteId"
+                        asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))"
+                        class="form-select select-picker-modal did-floating-select">
+                </select>
+                <label asp-for="Command.SiteId" class="did-floating-label"></label>
+            </div>
+            @* <div class="col-12 mb-3 did-floating-label-content view-maxlength">
+                <input asp-for="Command.AttendanceName" asp-placeholder-for="Command.AttendanceName" class="form-control did-floating-input" maxlength="200" />
+                <label-required asp-for="Command.AttendanceName" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.AttendanceName" class="text-danger"></span>
+            </div>
+            <div class="col-12 mb-3 did-floating-label-content view-maxlength">
+                <input asp-for="Command.AttendanceDesc" asp-placeholder-for="Command.AttendanceDesc" class="form-control did-floating-input" maxlength="200" />
+                <label asp-for="Command.AttendanceDesc" class="did-floating-label"></label>
+                <span asp-validation-for="Command.AttendanceDesc" class="text-danger"></span>
+            </div> *@
+        </div>
+    </div>
+    <div class="modal-footer">
+        <div class="form-check mt-3 form-switch">
+            <input asp-for="Command.AddMoreData" class="form-check-input" />
+            <label class="form-check-label fw-normal" asp-for="Command.AddMoreData"></label>
+        </div>
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>
+
+

@@ -1,17 +1,20 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Web.Application.DTOs.MediatR;
-using Web.Application.Extensions;
-using Web.Application.Features.IdentityFeatures.Roles.Queries;
-using Web.Application.Interfaces;
-using Web.Application.Interfaces.Repositories.Identity;
-using Web.Domain.Entities.Identity;
-using Web.Domain.Enums.Identity;
-using Web.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using Web.Application.DTOs.MediatR;
+using Web.Application.Extensions;
+using Web.Application.Features.Finance.Sites.DTOs;
+using Web.Application.Features.IdentityFeatures.Roles.Queries;
+using Web.Application.Interfaces;
+using Web.Application.Interfaces.Repositories.Finances;
+using Web.Application.Interfaces.Repositories.Identity;
+using Web.Domain.Entities.Finance;
+using Web.Domain.Entities.Identity;
+using Web.Domain.Enums.Identity;
+using Web.Shared;
 
 namespace Web.Application.Features.IdentityFeatures.Users.Queries
 {
@@ -32,11 +35,12 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
         private readonly IRoleRepo _roleRepo;
         private readonly IUserRoleRepo _userRoleRepo;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IFinanceUnitOfWork _unitOfWork;
 
         public UserGetPageQueryHandler(IMapper mapper, IRoleRepo roleRepo,
             IUserRoleRepo userRoleRepo, UserManager<User> userManager,
             RoleManager<Role> roleManager,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService, IFinanceUnitOfWork unitOfWork)
         {
             _roleRepo = roleRepo;
             _userRoleRepo = userRoleRepo;
@@ -44,6 +48,7 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
             _userManager = userManager;
             _roleManager = roleManager;
             _currentUserService = currentUserService;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<PaginatedResult<UserGetPageDto>> Handle(UserGetPageQuery queryInput, CancellationToken cancellationToken)
@@ -103,7 +108,8 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
             var userIdsList = result.Data.Select(x => x.Id).ToList();
             var rolesList = await _roleRepo.GetAllAsync();
             var userRolesList = await _userRoleRepo.GetByUserIdsListAsync(userIdsList);
-            
+            var userSiteEntity = _unitOfWork.Repository<UserSite>().Entities;
+            var sites = _unitOfWork.Repository<Site>().Entities;
             foreach (var item in result.Data)
             {
                 var rolesByUser = (from r in rolesList
@@ -111,7 +117,11 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
                                    where ur.UserId == item.Id
                                    select r).ToList();
                 item.Roles = _mapper.Map<List<RoleDto>>(rolesByUser);
-              
+                var sitesByUser = (from userSite in userSiteEntity
+                                   join site in sites on userSite.SiteId equals site.SiteId
+                                   where userSite.UserId == item.Id
+                                   select site).ToList();
+                item.Sites = _mapper.Map<List<SiteDto>>(sitesByUser);
             }
 
             return result;

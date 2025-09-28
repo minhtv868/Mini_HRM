@@ -1,0 +1,587 @@
+﻿@page
+@model WebJob.Pages.HRM.DoashBoards.IndexModel
+@await Component.InvokeAsync("FunctionFavorite")
+<div class="card mt-2">
+    <div class="card-header pt-1 car-header-padding">
+        <form method="get" class="justify-content-between search-form">
+			<div class="row gx-2 align-items-center mt-3">
+				@*   <div class="col-12 mb-4 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+                    <select asp-for="Query.SiteId" asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))"
+                            class="form-select form-select-submit did-floating-select"
+                            onclick="this.setAttribute('value', this.value); return false;"
+                            onchange="this.setAttribute('value', this.value); return false;">
+                    </select>
+                    <label asp-for="Query.SiteId" class="did-floating-label"></label>
+                </div>
+				<div class="col-12 mb-4 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+					<input class="form-control did-floating-input" asp-for="Query.Keywords" asp-placeholder-for="Query.Keywords" type="search" />
+					<label asp-for="Query.Keywords" class="did-floating-label"></label>
+				</div> *@
+			     
+				@* <div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-2">
+					<smart-select-filter asp-for="Query.Orderby" 
+										 enum-type="typeof(Domain.Enums.OrderByEnum)"
+										 search-mode="none">
+					</smart-select-filter>
+				</div>
+				<div class="col-12 mb-3 col-md-6 col-lg-4 col-xl-2">
+					<smart-select-filter asp-for="Query.SortOrder"
+										 enum-type="typeof(Domain.Enums.SortOrderEnum)"
+										 search-mode="none">
+					</smart-select-filter>
+				</div> *@
+				<div class="col-12 mb-4 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
+					<button class="btn btn-secondary me-1" type="submit">Tìm kiếm</button>
+				</div>
+			</div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        @Html.AntiForgeryToken()
+        <div class="table-responsive scrollbar">
+            <div class="container">
+                <div class="header">
+                    <h1>🕐 Chấm Công</h1>
+                    <div class="current-time" id="currentTime"></div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-info">
+                        <span class="status-label">Trạng thái hôm nay:</span>
+                        <span class="status-value" id="todayStatus">Chưa check-in</span>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">Giờ vào:</span>
+                        <span class="status-value" id="checkInTime">--:--</span>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">Giờ ra:</span>
+                        <span class="status-value" id="checkOutTime">--:--</span>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">Tổng giờ làm:</span>
+                        <span class="status-value" id="workHours">0.0h</span>
+                    </div>
+                </div>
+
+                <div id="messageContainer"></div>
+
+                <div class="location-info" id="locationInfo">
+                    📍 Vị trí hiện tại: <span id="locationText">Đang xác định...</span>
+                </div>
+
+                <div id="map"></div>
+
+                <div class="captcha-container" id="captchaContainer" >
+                    <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY"></div>
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn" id="checkinBtn" onclick="handleCheckIn()">
+                        <span id="checkinText">Check In</span>
+                    </button>
+                    <button class="btn checkout" id="checkoutBtn" onclick="handleCheckOut()" disabled>
+                        <span id="checkoutText">Check Out</span>
+                    </button>
+                </div>
+
+                <div class="security-info">
+                    <h4>🔐 Thông tin bảo mật</h4>
+                    <div>✓ Vị trí GPS được xác thực</div>
+                    <div>✓ Địa chỉ IP được kiểm tra</div>
+                    <div>✓ Thiết bị được nhận dạng</div>
+                </div>
+
+                <div class="device-info">
+                    <div><strong>IP:</strong> <span id="userIP">Đang tải...</span></div>
+                    <div><strong>Thiết bị:</strong> <span id="deviceType">Đang phát hiện...</span></div>
+                    <div><strong>Trình duyệt:</strong> <span id="browserInfo">Đang phát hiện...</span></div>
+                    <div><strong>Múi giờ:</strong> <span id="timezone">Đang phát hiện...</span></div>
+                    <div>Platform: <span id="platform"></span></div>
+                    <div>UserAgentData: <span id="uaData"></span></div>
+                    <div>Fingerprint: <span id="fingerprint"></span></div>
+                </div>
+            </div>
+
+            <!-- Google reCAPTCHA -->
+            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+         @*    @await Html.PartialAsync("BindData", Tuple.Create(Model.PaginatedResult, Model.PagingInput,Model.Query.SiteId)) *@
+           
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                class AttendanceSystem {
+                    constructor() {
+                        this.currentLocation = null;
+                        this.deviceFingerprint = null;
+                        this.userIP = null;
+                        this.initializeSystem();
+                    }
+
+                    async initializeSystem() {
+                        this.updateCurrentTime();
+                        setInterval(() => this.updateCurrentTime(), 1000);
+
+                        await this.detectDevice();
+                        await this.getUserIP();
+                        await this.getCurrentLocation();
+                        await this.loadTodayStatus();
+                        this.generateDeviceFingerprint();
+
+                        // Hiển thị captcha lần đầu trong ngày
+                        if (localStorage.getItem('todayAccess') !== new Date().toDateString()) {
+                            document.getElementById('captchaContainer').style.display = 'block';
+                            localStorage.setItem('todayAccess', new Date().toDateString());
+                        }
+                    }
+
+                    updateCurrentTime() {
+                        const now = new Date();
+                        const timeString = now.toLocaleTimeString('vi-VN', {
+                            hour12: false,
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                        const dateString = now.toLocaleDateString('vi-VN', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+
+                        document.getElementById('currentTime').innerHTML =
+                            `<div style="font-size: 0.8em; color: #888;">${dateString}</div>
+                             <div>${timeString}</div>`;
+                    }
+
+                                   async detectDevice() {
+                    const device = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'web';
+                    const browser = this.getBrowserInfo();
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const platform = navigator.platform; // hệ điều hành cơ bản
+                    const uaData = navigator.userAgentData ? JSON.stringify(navigator.userAgentData) : 'N/A';
+
+                    document.getElementById('deviceType').textContent = device;
+                    document.getElementById('browserInfo').textContent = browser;
+                    document.getElementById('timezone').textContent = timezone;
+                    document.getElementById('platform').textContent = platform;
+                    document.getElementById('uaData').textContent = uaData;
+                }
+
+
+                    getBrowserInfo() {
+                        const ua = navigator.userAgent;
+                        if (ua.includes('Chrome')) return 'Chrome';
+                        if (ua.includes('Firefox')) return 'Firefox';
+                        if (ua.includes('Safari')) return 'Safari';
+                        if (ua.includes('Edge')) return 'Edge';
+                        return 'Unknown';
+                    }
+
+                    async getUserIP() {
+                        try {
+                            const response = await fetch('https://api.ipify.org?format=json');
+                            const data = await response.json();
+                            this.userIP = data.ip;
+                            document.getElementById('userIP').textContent = data.ip;
+                        } catch (error) {
+                            console.error('Cannot get IP:', error);
+                            document.getElementById('userIP').textContent = 'Không xác định';
+                        }
+                    }
+
+                    async getCurrentLocation() {
+                        if (!navigator.geolocation) {
+                            this.showError('Trình duyệt không hỗ trợ định vị GPS');
+                            return;
+                        }
+
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                this.currentLocation = {
+                                    lat: position.coords.latitude,
+                                    lng: position.coords.longitude
+                                };
+                                document.getElementById('locationInfo').textContent =
+                                    `Vĩ độ: ${this.currentLocation.lat.toFixed(5)}, Kinh độ: ${this.currentLocation.lng.toFixed(5)}`;
+                            },
+                            (error) => {
+                                console.error('GPS error:', error);
+                                document.getElementById('locationInfo').textContent = 'Không lấy được vị trí';
+                            }
+                        );
+                    }
+
+                    async loadTodayStatus() {
+                        // Demo dữ liệu giả
+                        const statusEl = document.getElementById('todayStatus');
+                        statusEl.textContent = 'Chưa chấm công';
+                    }
+
+                    generateDeviceFingerprint() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        ctx.textBaseline = "top";
+                        ctx.font = "14px 'Arial'";
+                        ctx.textBaseline = "alphabetic";
+                        ctx.fillStyle = "#f60";
+                        ctx.fillRect(125,1,62,20);
+                        ctx.fillStyle = "#069";
+                        ctx.fillText("mini-hrm", 2, 15);
+                        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                        ctx.fillText("mini-hrm", 4, 17);
+                        const fingerprint = canvas.toDataURL();
+                        this.deviceFingerprint = btoa(fingerprint).substring(0, 32);
+                        document.getElementById('fingerprint').textContent = this.deviceFingerprint;
+                    }
+
+                    showError(msg) {
+                        alert(msg);
+                    }
+                }
+                                async function getLocationAuto() {
+                                    debugger;
+                    const out = document.getElementById('locationText');
+                    out.textContent = 'Đang lấy vị trí...';
+                    try {
+                        let loc;
+                        // cố gắng lấy GPS
+                        loc = await new Promise((resolve, reject) => {
+                            if (!navigator.geolocation) reject('Trình duyệt không hỗ trợ GPS');
+                            navigator.geolocation.getCurrentPosition(
+                                pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, source: 'gps' }),
+                                err => reject(err),
+                                { enableHighAccuracy: true, timeout: 10000 }
+                            );
+                        });
+                        out.textContent = `GPS: (${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)})`;
+                    } catch (gpsErr) {
+                        // fallback IP nếu GPS lỗi hoặc bị từ chối
+                        try {
+                            const resp = await fetch('https://ipapi.co/json/');
+                            const data = await resp.json();
+                            out.textContent = `IP fallback: (${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}) — ${data.city}, ${data.region}`;
+                        } catch {
+                            out.textContent = 'Không lấy được vị trí';
+                        }
+                    }
+                }
+
+                // tự động chạy khi trang load=
+                window.onload = () => {
+                    new AttendanceSystem();
+                      getLocationAuto();
+                };
+            </script>
+
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .cards { display: flex; gap: 20px; margin-bottom: 30px; }
+                    .card {
+                      flex: 1;
+                      padding: 20px;
+                      background: #f7f7f7;
+                      border-radius: 10px;
+                      text-align: center;
+                      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    .card h2 { margin: 0; font-size: 28px; color: #333; }
+                    .card p { margin: 5px 0 0; font-size: 14px; color: #666; }
+                    .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
+                    canvas { background: #fff; border-radius: 10px; padding: 10px; }
+                </style>
+            <style>
+                
+
+                .container {
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(10px);
+                    border-radius: 20px;
+                    padding: 40px;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                    width: 100%;
+                    text-align: center;
+                }
+
+                .header {
+                    margin-bottom: 30px;
+                }
+
+                    .header h1 {
+                        color: #333;
+                        margin-bottom: 10px;
+                        font-size: 28px;
+                    }
+
+                .current-time {
+                    font-size: 24px;
+                    color: #666;
+                    font-weight: 600;
+                    margin: 20px 0;
+                }
+
+                .status-card {
+                    background: #f8f9ff;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    border-left: 4px solid #667eea;
+                }
+
+                .status-info {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin: 10px 0;
+                }
+
+                .status-label {
+                    font-weight: 600;
+                    color: #555;
+                }
+
+                .status-value {
+                    color: #333;
+                    font-weight: 500;
+                }
+
+                    .status-value.success {
+                        color: #22c55e;
+                    }
+
+                    .status-value.warning {
+                        color: #f59e0b;
+                    }
+
+                .btn {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 15px 30px;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    margin: 10px;
+                    min-width: 120px;
+                }
+
+                    .btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+                    }
+
+                    .btn:disabled {
+                        background: #ccc;
+                        cursor: not-allowed;
+                        transform: none;
+                        box-shadow: none;
+                    }
+
+                    .btn.checkout {
+                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                    }
+
+                        .btn.checkout:hover {
+                            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+                        }
+
+                .location-info {
+                    background: #ecfdf5;
+                    border: 1px solid #a7f3d0;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin: 15px 0;
+                    font-size: 14px;
+                    color: #065f46;
+                }
+
+                .error {
+                    background: #fef2f2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                    font-size: 14px;
+                }
+
+                .success {
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    color: #166534;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                    font-size: 14px;
+                }
+
+                .loading {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    border: 3px solid #f3f3f3;
+                    border-top: 3px solid #667eea;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin-right: 10px;
+                }
+
+                @@keyframes spin {
+                    0%
+
+                {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+
+                }
+
+                .security-info {
+                    background: #fffbeb;
+                    border: 1px solid #fed7aa;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 20px 0;
+                    font-size: 13px;
+                    color: #92400e;
+                }
+
+                    .security-info h4 {
+                        margin-bottom: 8px;
+                        color: #b45309;
+                    }
+
+                .device-info {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                    font-size: 12px;
+                    color: #666;
+                    margin-top: 15px;
+                }
+
+                .captcha-container {
+                    margin: 20px 0;
+                    padding: 15px;
+                    border: 1px dashed #ddd;
+                    border-radius: 8px;
+                    background: #fafafa;
+                }
+
+                #map {
+                    height: 200px;
+                    width: 100%;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                    display: none;
+                }
+
+                @@media (max-width: 480px) {
+                    .container
+
+                {
+                    padding: 20px;
+                    margin: 10px;
+                }
+
+                .device-info {
+                    grid-template-columns: 1fr;
+                }
+
+                }
+            </style>
+                <h1>Dashboard - Mini HRM</h1>
+
+                <!-- Thẻ thống kê -->
+                <div class="cards">
+                    <div class="card">
+                        <h2>120</h2>
+                        <p>Nhân viên</p>
+                    </div>
+                    <div class="card">
+                        <h2>98</h2>
+                        <p>Chấm công hôm nay</p>
+                    </div>
+                    <div class="card">
+                        <h2>5</h2>
+                        <p>Đang nghỉ phép</p>
+                    </div>
+                    <div class="card">
+                        <h2>12</h2>
+                        <p>Yêu cầu chờ duyệt</p>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ -->
+                <div class="charts">
+                    <canvas id="chartDept"></canvas>
+                    <canvas id="chartLate"></canvas>
+                    <canvas id="chartSalary"></canvas>
+                    <canvas id="chartOvertime"></canvas>
+                </div>
+
+                <script>
+                    // Pie chart: Tỉ lệ nhân viên theo phòng ban
+                    new Chart(document.getElementById("chartDept"), {
+                      type: "pie",
+                      data: {
+                        labels: ["IT", "HR", "Finance", "Sales"],
+                        datasets: [{
+                          data: [40, 20, 30, 30],
+                          backgroundColor: ["#4CAF50", "#FF9800", "#2196F3", "#9C27B0"]
+                        }]
+                      },
+                      options: { plugins: { title: { display: true, text: "Nhân viên theo phòng ban" } } }
+                    });
+
+                    // Bar chart: Đi muộn theo tuần
+                    new Chart(document.getElementById("chartLate"), {
+                      type: "bar",
+                      data: {
+                        labels: ["T2", "T3", "T4", "T5", "T6"],
+                        datasets: [{
+                          label: "Số lần đi muộn",
+                          data: [5, 8, 3, 6, 4],
+                          backgroundColor: "#FF5722"
+                        }]
+                      },
+                      options: { plugins: { title: { display: true, text: "Đi muộn trong tuần" } } }
+                    });
+
+                    // Line chart: Mức lương trung bình theo tháng
+                    new Chart(document.getElementById("chartSalary"), {
+                      type: "line",
+                      data: {
+                        labels: ["1", "2", "3", "4", "5", "6"],
+                        datasets: [{
+                          label: "Lương trung bình (triệu VND)",
+                          data: [12, 13, 14, 13, 15, 16],
+                          borderColor: "#3F51B5",
+                          fill: false
+                        }]
+                      },
+                      options: { plugins: { title: { display: true, text: "Lương trung bình theo tháng" } } }
+                    });
+
+                    // Doughnut chart: Overtime theo tháng
+                    new Chart(document.getElementById("chartOvertime"), {
+                      type: "doughnut",
+                      data: {
+                        labels: ["OT <= 10h", "OT 10-20h", "OT > 20h"],
+                        datasets: [{
+                          data: [50, 30, 20],
+                          backgroundColor: ["#FFC107", "#00BCD4", "#E91E63"]
+                        }]
+                      },
+                      options: { plugins: { title: { display: true, text: "Phân bổ Overtime" } } }
+                    });
+                </script>
+        </div>
+    </div>
+</div>

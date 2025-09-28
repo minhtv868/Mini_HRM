@@ -4,7 +4,7 @@ namespace Web.Domain.Entities.Finance
 {
     public class Site : BaseAuditableEntity
     {
-        public short SiteId { get; set; }
+        public int SiteId { get; set; }
         public string SiteName { get; set; }
         public string ShortName { get; set; }
         public string WebsiteDomain { get; set; }

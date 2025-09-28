@@ -1,0 +1,40 @@
+﻿@* @page
+@model WebJob.Pages.HRM.Payrolls.EditModel
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "Edit")"
+      data-ajax-method="post"
+      data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr, false, true)">
+    <div class="modal-header">
+        <h5 class="modal-title">Cập nhật phòng ban</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body mt-0">
+        <div class="row gx-2">
+            <input type="hidden" asp-for="Command.PayrollId" />
+              <input type="hidden" asp-for="Command.SiteId" />
+            <div class="col-12 mb-3 did-floating-label-content view-maxlength">
+                <input asp-for="Command.PayrollName" asp-placeholder-for="Command.PayrollName" class="form-control did-floating-input" maxlength="200" />
+                <label-required asp-for="Command.PayrollName" class="did-floating-label"></label-required>
+                <span asp-validation-for="Command.PayrollName" class="text-danger"></span>
+            </div>
+            <div class="col-12 mb-3 did-floating-label-content view-maxlength">
+                <input asp-for="Command.PayrollDesc" asp-placeholder-for="Command.PayrollDesc" class="form-control did-floating-input" maxlength="200" />
+                <label asp-for="Command.PayrollDesc" class="did-floating-label"></label>
+                <span asp-validation-for="Command.PayrollDesc" class="text-danger"></span>
+            </div>
+          
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>
+
+ *@

@@ -1,10 +1,11 @@
-﻿using Web.Application.Features.IdentityFeatures.SysFunctions.Queries;
-using Web.Application.Interfaces;
-using Web.Domain.Entities.Identity;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using Web.Application.Features.Finance.Sites.Queries;
+using Web.Application.Features.IdentityFeatures.SysFunctions.Queries;
+using Web.Application.Interfaces;
+using Web.Domain.Entities.Identity;
 
 namespace Web.Infrastructure.Services
 {
@@ -70,7 +71,9 @@ namespace Web.Infrastructure.Services
 
         public async Task<bool> HasPermissionWithSite(int siteId)
         {
-             throw new NotImplementedException();
+            var siteAll = await _mediator.Send(new SiteGetAllByUserQuery());
+            var site = siteAll.Where(x => x.SiteId == siteId).FirstOrDefault();
+            return site != null;
         }
     }
 }

@@ -116,7 +116,32 @@
                                         <i class="far fa-edit text-600 hover-opacity fa-xs"></i>
                                     </a>
                                 </div>
+                                @if (item.Sites != null && item.Sites.Any())
+                                {
+                                    var top3Site = item.Sites.Take(3).ToList();
+                                    var siteMore = item.Sites.Skip(3).ToList();
+                                    <div class="flex-row d-flex align-items-start current-site" style="margin-top:3px !important;">
+                                        @foreach (var site in top3Site)
+                                        {
+                                            <span class="badge rounded-pill badge-subtle-success fs--2 py-0 me-2" style="height:16px !important; line-height:14px !important;"> @site.SiteName</span>
+                                        }
+                                        @if (siteMore != null && siteMore.Any())
+                                        {
+                                            <a src="javascript:void(0)" class="fs--2 py-0 me-2 show-more" style="cursor:pointer;" onclick="showMoreSites(this)">Xem thêm</a>
+                                        }
+                                    </div>
+                                    <div class="flex-row d-flex align-items-start more-site d-none" style="margin-top:3px !important;">
+                                        @if (siteMore != null && siteMore.Any())
+                                        {
+                                            foreach (var site in siteMore)
+                                            {
+                                                <span class="badge rounded-pill badge-subtle-success fs--2 py-0 me-2" style="height:16px !important; line-height:14px !important;"> @site.SiteName</span>
+                                            }
+                                        }
+                                        <a src="javascript:void(0)" class="fs--2 py-0 me-2" style="cursor:pointer;" onclick="HideMoreSites(this)">Thu gọn</a>
+                                    </div>
 
+                                }
                                 
 
                             </div>
@@ -148,7 +173,7 @@
                         </div>
                     </td>
                     <td>
-                        @if (!isAdmin)
+                        @if (isAdmin)
                         {
                             <a class="fw-semi-bold" href="javascript:void(0)" data-modal="modal-sm" style="color:#5e6e82"
                                onclick="return modalGet(this, '@Url.Page(pageName:"AssignSites", values: new { userId = item.Id })', 'Cập nhật Site')"

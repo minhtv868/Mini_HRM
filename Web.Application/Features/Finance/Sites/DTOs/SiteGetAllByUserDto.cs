@@ -5,7 +5,7 @@ namespace Web.Application.Features.Finance.Sites.DTOs
 {
     public class SiteGetAllByUserDto : IMapFrom<Site>
     {
-        public short SiteId { get; set; }
+        public int SiteId { get; set; }
         public string SiteName { get; set; }
         public string ShortName { get; set; }
         public string WebsiteDomain { get; set; }

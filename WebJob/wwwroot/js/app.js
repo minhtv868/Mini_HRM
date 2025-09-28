@@ -1,5 +1,4 @@
-﻿var currentAbortController = null;
-$(function () {
+﻿$(function () {
     $(document).ajaxError(function (event, jqxhr, settings, exception) {
         removeLoading(elementAction)
 
@@ -33,24 +32,42 @@ $(function () {
 
     modalPopup.on('hidden.bs.modal', function () {
         modalReset()
-
-        if (currentAbortController) {
-            currentAbortController.abort();
-            currentAbortController = null;
-            console.log('⛔ Stream bị hủy do đóng modal.');
-        }
     })
 
     modalDataPopup.on('hidden.bs.modal', function () {
         mediaSelected = []
         newsSelected = []
         //modalReset($('#modalDataPopup'))
+    })
 
-        if (currentAbortController) {
-            currentAbortController.abort();
-            currentAbortController = null;
-            console.log('⛔ Stream bị hủy do đóng modal.');
+    $(document).on('click', '.search-btn', function (event) {
+        event.preventDefault()
+        var self = $(this), parent = self.closest('.card'), searchText = $('.search', parent).val().toLowerCase()
+        $('.list .form-check', parent).each(function () {
+            var label = $(this).find('.form-check-label').text().toLowerCase()
+            if (label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(searchText.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))) {
+                $(this).show()
+            } else {
+                $(this).hide()
+            }
+        })
+    })
+    $(document).on('keypress', '.search', function (event) {
+        if (event.which == 13) {
+            var self = $(this), parent = self.closest('.card')
+            $('.search-btn', parent).click()
         }
+    })
+    $(document).on('change', 'table .row-checkbox', function () {
+        let table = $(this).closest('table')
+        selectRow(table)
+    })
+
+    $(document).on('change', 'table thead input[class*="form-check-input"]', function () {
+        let table = $(this).closest('table'),
+            isChecked = $(this).prop('checked')
+        table.find('.row-checkbox').prop('checked', isChecked)
+        selectRow(table)
     })
 
     $(document).on('change', '[data-bulk-select]', () => {
@@ -73,17 +90,7 @@ $(function () {
 
         $('input[type="hidden"][name="ChkActionIds"]').val(values)
     })
-    $(document).on('change', '.check-docItem', function () {
-        if (this.checked) {
-            $('.check-docItem').not(this).prop('checked', false);
-        }
-    });
-    $(document).on('click', '.btn-submit', function () {
-        const form = $(this).closest('form')
-        if (form.length) {
-            form.submit()
-        }
-    });
+
     $(document).on('change', '[data-bulk-select-row]', () => {
         let values = []
         const dataBulk = JSON.parse($('input[data-bulk-select]').attr('data-bulk-select') || '{}')
@@ -103,106 +110,6 @@ $(function () {
             $(`#${dataBulk.actions}`).addClass('d-none')
             $(`#${dataBulk.replacedElement}`).removeClass('d-none')
         }
-    })
-
-    $(document).on('click', '#save-convert-doc', function (event) {
-        const self = $(this),
-            docTempId = self.data('id');
-
-        // ✅ Nếu đang xử lý thì bỏ qua
-        if (self.attr('data-loading') === 'true' || !docTempId) return;
-
-        const token = $('input:hidden[name="__RequestVerificationToken"]').val();
-
-        const originalHtml = self.html();
-
-        function sendConvertRequest(isCompleted) {
-            const url = `/LuatVietNamDocItem/DocItemFullTemps?DocTempId=${docTempId}` +
-                (isCompleted ? '&isCompleted=true' : '') +
-                '&handler=GenFileWord';
-
-            fetchData({
-                url: url,
-                type: 'post',
-                dataType: 'json',
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('RequestVerificationToken', token);
-                    self.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-                    self.attr('data-loading', 'true');
-                }
-            }).then(({ Data, Succeeded, Messages }) => {
-                if (Succeeded && Data?.FilePathDomain) {
-                    window.location.href = Data.FilePathDomain;
-                    return;
-                } else {
-                    const message = Array.isArray(Messages) && Messages.length > 0
-                        ? Messages.join('<br />')
-                        : 'Đã xảy ra lỗi không xác định.';
-                    toastMessage(false, message);
-                }
-            })
-                .finally(() => {
-                    self.html(originalHtml);
-                    self.removeAttr('data-loading');
-                });
-        }
-
-        const buttons = {
-            confirm: {
-                text: "Đồng ý",
-                btnClass: 'btn btn-danger',
-                keys: ['enter'],
-                action: function () {
-                    sendConvertRequest(true);
-                }
-            },
-            somethingElse: {
-                text: 'Không, tôi chỉ muốn tải file',
-                btnClass: 'btn-blue',
-                keys: ['enter', 'shift'],
-                action: function () {
-                    sendConvertRequest(false);
-                }
-            }
-        };
-
-        showMessage({
-            title: 'Xác nhận',
-            icon: 'fa fa-question-circle',
-            columnClass: 'col-md-6 col-md-offset-3',
-            message: 'Xác nhận tải file và hoàn thành convert cho văn bản này',
-            buttons: buttons
-        });
-    });
-
-    $(document).on('change', '.select-change-content', (e) => {
-        var self = $(e.target);
-        var value = self.find('option:selected').val();
-        var id = self.data('id');
-        var idResult = self.data('idresult');
-        var urlRequest = self.data('url') || '';
-        if (urlRequest.trim().length > 0 && $('#' + idResult).length) {
-            var data = {};
-            data[id] = value;
-            if (value > 0) {
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    data: data,
-                }).then(response => {
-                    if (response.Succeeded) {
-                        $('#' + idResult).val(response.Data);
-                        var editor = CKEDITOR.instances[idResult];
-                        if (editor) {
-                            editor.setData(response.Data);
-                        }
-                    }
-                }).catch(error => {
-                    console.error("Error:", error);
-                });
-            }
-        }
-
     })
 
     $('.collapse-filter').click(function () {
@@ -236,15 +143,7 @@ $(function () {
             }
         }
     })
-    $(document).on('keypress keyup blur', '.genDocUrl', (e) => {
-        var self = $(e.target);
-        var value = self.val()
-        var fieldName = $('#Command_FieldName').val();
-        var docId = $('#Command_DocId').val();
-        var docGroupId = $('#Command_DocGroupId').val();
-        $('#Command_DocUrl').val(`/${toSlug(fieldName, '-')}/${toSlug(self.val(), '-')}-${docId}-d${docGroupId}.html`)
 
-    })
     $(document).on('click', 'a[href^="#collapseBock_"]', (e) => {
         var target = e.target,
             title = $(target).attr('title') == 'Hiển thị dữ liệu' ? 'Ẩn dữ liệu' : 'Hiển thị dữ liệu'
@@ -270,254 +169,155 @@ $(function () {
         }
     })
 
-    $(document).on('click', '#btn-spotlight', (e) => {
-        var target = e.target,
-            spotlightIndex = modalSpotlightPopup.attr('data-id') || '',
-            timeElement = modalSpotlightPopup.find('input#Time').first(),
-            contentElement = modalSpotlightPopup.find('textarea#Content').first()
+    $(document).on('change', '.select-position', function () {
+        var selectedValue = $(this).val();
+        if (selectedValue == '4') {
+            $('#displayOrderContainer').show();
+            $('#displayOrderAfterContainer').hide();
+        }
+        else if (selectedValue == '3') {
+            $('#displayOrderAfterContainer').show();
+            $('#displayOrderContainer').hide();
+        }
+        else {
+            $('#displayOrderContainer').hide();
+            $('#displayOrderAfterContainer').hide();
+        }
+    });
+    $(document).on('click', '.btn-add-doc', (e) => {
+        var self = $(e.target)
+        var docId = $("#Query_DocId").val()
+        $('.text-validate .text-required').hide();
+        var relateTypeId = self.data('relatetypeid');
+        var docReferenceIds;
+        var docIdentity = self.parent().prev().find(".select2-selection__choice__remove").text();
 
-        if (timeElement.val().trim().length == 0) {
+        var url = $(".reoloadUrl").data('ajax-success-url'),
+            docReferenceIds = self.parent().prev().find(".select2-auto-complete-modal").val();
+        var command = {
+            docId: parseInt(docId),
+            relateTypeId: parseInt(relateTypeId),
+            docReferenceIds: docReferenceIds,
+            reviewStatusId: 1
+        }
 
-            timeElement.focus()
-
-            validationOnError(timeElement, 'Chưa chọn khung thời gian.')
-
-            return false
+        if ((docReferenceIds == '' || !docReferenceIds)) {
+            self.closest('.box-relate').next('.text-validate ').find('.text-required').show();
+            return;
         } else {
-            if (!validateMediaDuration(timeElement.val().trim())) {
+            self.closest('.box-relate').next('.text-validate').find('.text-required').hide();
 
-                validationOnError(timeElement, 'Vượt khung thời gian audio.')
+            $.ajax({
+                url: "/BongDa24hDocs/DocRelates?handler=AddDocRelates",
+                type: "POST",
+                contentType: 'application/json',
+                dataType: "json",
+                data: JSON.stringify(command),
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                },
+                success: function (response) {
+                    if (response && response.Succeeded) {
 
-                return false
-            }
-        }
+                        fetchData({
+                            type: 'GET',
+                            url: url,
+                            dataType: 'html',
+                        }).then(response => {
+                            $("#tblDocRelate").html(response);
+                            $('.modal-body').addClass('scroll-item')
+                            $('.modal-body').attr('data-select2-id', '')
+                            $('.scroll-item').on('scroll', function () {
+                                console.log('scrolling');
+                            });
 
-        if (contentElement.val().trim().length == 0) {
-
-            contentElement.focus()
-
-            validationOnError(contentElement, 'Chưa nhập nội dung.')
-
-            return false
-        }
-
-        const timeFormat = formatMediaDuration(timeElement.val().trim());
-
-        var timeIndexExists = spotlightArray.findIndex(item => item.Time == timeFormat);
-
-        if (spotlightIndex.trim().length > 0) {
-
-            var index = spotlightArray.findIndex(item => item.Time == spotlightIndex);
-
-            if (index != -1) {
-
-                if (timeIndexExists != -1 && index != timeIndexExists) {
-
-                    validationOnError(timeElement, `Khung thời gian ${timeElement.val()} đã tồn tại.`)
-
-                    return;
+                        })
+                    }
+                    toastMessage(response.Succeeded, response.Messages.join('<br />'))
+                    self.parent().prev().find(".select2-auto-complete-modal").val(0).trigger("change");
+                },
+                error: function (xhr, status, error) {
+                    toastMessage(false, "Vui lòng thử lại");
                 }
-
-                spotlightArray[index].Time = timeFormat
-
-                spotlightArray[index].Content = contentElement.val()
-
-            }
-
-        } else {
-
-            if (timeIndexExists != -1) {
-
-                validationOnError(timeElement, `Khung thời gian ${timeFormat} đã tồn tại.`)
-
-                return;
-            }
-
-            spotlightArray.push({
-                'Time': timeFormat,
-                'Content': contentElement.val()
             })
-
-        }
-
-        bindDataSpotlight()
-
-        timeElement.val('')
-
-        contentElement.val('')
-
-        modalSpotlightPopup.modal('hide')
-    })
-    $(document).on('click', '#toggle-doc-content', (e) => {
-        var self = $(e.target)
-        var docId = self.data('id');
-        if (docId) {
-            updateDocSummaryLayout(docId);
         }
     })
-    $(document).on('click', '#toggle-root-content', (e) => {
-        var self = $(e.target)
-        var contentId = self.data('content-id');
-        if (contentId) {
-            var editor = CKEDITOR.instances[contentId];
-            if (editor) {
-                const newsContentCol = $('#news-root-content-col');
-                const docContentCol = $('#doc-content-col');
-                const toggleLink = $('#toggle-root-content');
-                const container = $('#news-root-stream-container');
-                const rowParent = self.parent().closest('.row');
-                const contentCols = rowParent.find('.content-col');
 
+    $(document).on('click', '#categoryTree .toggle-icon', function () {
+        const self = $(this),
+            parentLi = self.parent('li')
+        childUl = parentLi.children('ul')
 
-                var editorContent = editor.getData();
-                if (container.length && editorContent.length > 0) {
-                    container.html(editorContent);
-                }
-                const isVisible = newsContentCol.hasClass('d-none');
-                if (isVisible) {
-                    toggleLink.text('Ẩn nội dung tạo bài viêt');
-                    newsContentCol.removeClass('d-none').addClass('col-md-4');
-                    contentCols.removeClass('col-md-6').addClass('col-md-4');
+        //if (childUl.is(':visible')) {
+        //    childUl.slideUp('fast')
+        //    self.text('+')
+        //} else {
+        //    childUl.slideDown('fast')
+        //    self.text('−')
+        //}
 
-                } else {
-                    toggleLink.text('Hiển thị nội dung tạo bài viêt');
-                    newsContentCol.addClass('d-none').removeClass('col-md-4');
-                    //contentCols.removeClass('col-md-4').addClass('col-md-6');
+        parentLi.toggleClass('expanded');
+        self.toggleClass('collapsed expanded');
 
-                    if (docContentCol.hasClass('d-none')) {
-                        contentCols.removeClass('col-md-4').addClass('col-md-6');
-                    }
+        parentLi.children('ul').slideToggle('fast');
+    })
+
+    $(document).on('click', '#categoryTree .category-checkbox', function () {
+        const isChecked = $(this).is(':checked')
+
+        $(this).siblings('ul').find('.category-checkbox').prop('checked', isChecked)
+
+        if (!isChecked) {
+            $(this).parents('ul').prev('.category-checkbox').prop('checked', false)
+        }
+    })
+
+    $(document).on('input', '#categorySearch', function () {
+        const searchText = normalizeText($(this).val().toLowerCase())
+
+        $('#categoryTree label').each(function () {
+            var label = $(this), text = label.text(),
+                normalizedText = normalizeText(text.toLowerCase()),
+                highlightedText = text
+            if (searchText.length > 0) {
+                var index = normalizedText.indexOf(searchText)
+
+                if (index !== -1) {
+                    var beforeText = text.substring(0, index)
+                    var matchText = text.substring(index, index + searchText.length)
+                    var afterText = text.substring(index + searchText.length)
+
+                    highlightedText = beforeText + '<span class="highlight">' + matchText + '</span>' + afterText
                 }
             }
-        }
-    })
-    $(document).on('click', '#toggle-content', (e) => {
-        var self = $(e.target)
-        var contentId = self.data('content-id');
-        var contentBackUpId = self.data('content-backup-id');
-        var title = self.data('title');
-        var resultId = self.data('result-id');
-        if (contentId) {
-            var editor = CKEDITOR.instances[contentId];
-            if (editor) {
-                const container = $('#' + resultId);
-                const newsContentCol = container.parent().closest('.resultparent');
-
-                const rowParent = self.parent().closest('.row');
-                const contentCols = rowParent.find('.content-col');
-
-                var editorContent = editor.getData();
-                if (editorContent.length == 0) {
-                    var editorBackUp = CKEDITOR.instances[contentBackUpId];
-                    if (editorBackUp) {
-                        editorContent = editorBackUp.getData();
-                    }
+            $('.treeview li').each(function () {
+                var $this = $(this)
+                if ($this.find('ul').length) {
+                    $this.find('ul').show()
                 }
-                if (container.length && editorContent.length > 0) {
-                    container.html(editorContent);
-                }
-
-                const isVisible = newsContentCol.hasClass('d-none');
-                if (isVisible) {
-                    self.text('Ẩn ' + title);
-                    newsContentCol.removeClass('d-none').addClass('col-md-4');
-                    contentCols.removeClass('col-md-6').addClass('col-md-4');
-
-                } else {
-                    self.text('Hiển thị ' + title);
-                    newsContentCol.addClass('d-none').removeClass('col-md-4');
-                    contentCols.removeClass('col-md-4').addClass('col-md-6');
-                }
-            }
-        }
-    })
-    $(document).on('click', '#auto-add-doclink', (e) => {
-        var self = $(e.target)
-        var idResult = self.data('content-id');
-        var urlRequest = self.data('url') || '';
-        if (idResult) {
-            var editor = CKEDITOR.instances[idResult];
-            if (editor) {
-                var editorContent = editor.getData();
-                if (editorContent.length > 0) {
-                    $.ajax({
-                        url: urlRequest,
-                        type: 'POST',
-                        data: { content: editorContent },
-                        dataType: 'json',
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val());
-                            self.attr('disabled', 'disabled')
-                            self.data('og', self.html())
-                            self.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-                        },
-                        success: function (response) {
-                            if (response.Data.length > 0) {
-                                editor.setData(response.Data);
-                            }
-                            self.attr('disabled', 'false');
-                            self.html(self.data('og'));
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error:", error);
-                            self.attr('disabled', 'false');
-                            self.html(self.data('og'));
-                        }
-                    });
-                }
-            }
-        }
-    })
-    $(document).on('click', '.delete-spotlight', (e) => {
-        var target = e.target,
-            parent = $(target).closest('.timeline-item'),
-            spotlightIndex = parent.attr('data-id') || ''
-
-        if (confirm('Xác nhận xóa spotlight đã chọn ?') && spotlightIndex.trim().length > 0) {
-
-            var index = spotlightArray.findIndex(item => item.Time == spotlightIndex);
-
-            if (index != -1) {
-
-                spotlightArray.splice(index, 1)
-
-            }
-        }
-
-        bindDataSpotlight()
-
-        modalSpotlightPopup.modal('hide')
-    })
-
-    $(document).on('change', '.input-reviewStatusIds', function () {
-
-        const form = $(this).closest('form'),
-            selectedValues = $('.input-reviewStatusIds').filter(':checked').map(function () {
-                return this.value
-            }).get()
-
-        const valueToSet = selectedValues.length > 0 ? selectedValues.join(',') : '0'
-
-        $('#Query_ReviewStatusIds').val(valueToSet)
-
-        if (form.length) {
-            form.submit()
-        }
+            })
+            label.html(highlightedText)
+        })
     })
 
     $(document).on('change', '.select-link', (e) => {
         var self = $(e.target), id = self.data('id'),
             value = self.find('option:selected').val(),
             urlRequest = self.data('url') || '', linkTo = self.data('link-to'),
-            currentValue = $(linkTo).data('value') || '', isFilter = self.data('filter') || false
+            currentValue = $(linkTo).data('value') || '', isFilter = self.data('filter') || false,
+            { callbacks } = self.get(0).dataset
+
+        if (value == "...") value = 0
+
+        $(`${linkTo} option`).filter(function () {
+            return $(this).val() != '0' && $(this).val() != ''
+        }).remove()
 
         if (typeof id != 'undefined' && typeof linkTo != 'undefined' && urlRequest.trim().length > 0) {
 
             var data = {}
 
             data[id] = value
-
-            $(`${linkTo} option[value!=""][value!="0"]`).remove()
 
             if (value >= 0) {
 
@@ -535,152 +335,37 @@ $(function () {
                                 .text(value.text))
                     })
 
-                    if (isFilter) {
-                        currentValue = $(`${linkTo} option:first`).val()
-                    } else if (response.Data.filter(x => x.id == currentValue).length == 0) {
-                        currentValue = response.Data[0].id
-                    }
-
-                    $(linkTo).val(currentValue).trigger('change')
-                })
-
-            }
-        }
-    })
-    $(document).on('change', '.select-link-2', (e) => {
-
-        var self = $(e.target), id = self.data('id'),
-            value = self.find('option:selected').val(),
-            urlRequest = self.data('url') || '',
-            urlRequestUpdate = self.data('url-update') || '',
-            linkTo = self.data('link-to'),
-            currentValue = $(linkTo).data('value') || '', isFilter = self.data('filter') || false;
-
-        if (typeof urlRequestUpdate != 'undefined' && urlRequest != null) {
-            urlRequest = urlRequestUpdate;
-        }
-
-        if (typeof id != 'undefined' && typeof linkTo != 'undefined' && urlRequest.trim().length > 0 && $(linkTo).length) {
-            var data = {}
-
-            data[id] = value
-
-            $(`${linkTo} option[value!=""][value!="0"]`).remove()
-
-            if (value >= 0) {
-
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    dataType: 'json',
-                    data: data,
-                }).then(response => {
-                    $.each(response.Data, function (key, value) {
-
-                        var newOption = $('<option></option>')
-                            .attr('value', value.id)
-                            .text(value.text);
-                        if (value.title.length) {
-                            newOption.attr('data-FullName', value.title);
+                    if (response.Data.length > 0) {
+                        if (isFilter) {
+                            currentValue = $(`${linkTo} option:first`).val()
+                        } else if (response.Data.filter(x => x.id == currentValue).length == 0) {
+                            currentValue = response.Data[0].id
                         }
-                        $(linkTo).append(newOption);
-                    });
 
-                    //Kiểm tra giá trị hiện tại có nằm trong danh sách mới không
-                    if (!response.Data.some(item => item.id === currentValue)) {
-                        //exists
-                        currentValue = response.Data[0].id;
+                        $(linkTo).val(currentValue).trigger('change')
+                    }
+                    else {
+                        $(linkTo).val(0).trigger('change')
                     }
 
-                    if (isFilter && response.Data.filter(x => x.id == currentValue).length == 0) {
-                        currentValue = response.Data[0].id
+                    if (callbacks) {
+                        const callbackObjects = JSON.parse(callbacks)
+                        callbackObjects.forEach(callbackObj => {
+                            const callback = window[callbackObj.name]
+                            if (typeof callback === 'function') {
+                                const params = callbackObj.params.map(param => {
+                                    if (param === '#SiteId#') return value
+                                    return param
+                                })
+
+                                callback(...params)
+                            }
+                        })
                     }
-
-                    $(linkTo).val(currentValue).trigger('change');
                 })
 
-            } else {
-                $(linkTo).trigger('change');
             }
         }
-    })
-    $(document).on('change', '.select-link-docItem', (e) => {
-        var self = $(e.target), id = self.data('id'),
-            urlRequest = self.data('url') || '',
-            urlRequestUpdate = self.data('url-update') || '',
-            docItemId = self.data('dociemid') || 0,
-            value = self.find('option:selected').val(),
-            linkTo = self.data('link-to');
-        if (typeof urlRequestUpdate != 'undefined' && urlRequest != null) {
-            urlRequest = urlRequestUpdate;
-        }
-        if (typeof id != 'undefined' && urlRequest.trim().length > 0) {
-            var data = {}
-
-            data[id] = value;
-            data['docItemId'] = docItemId;
-            if (value > 0) {
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    dataType: 'html',
-                    data: data,
-                }).then(response => {
-                    $(linkTo).html(response)
-
-                })
-            }
-            else {
-                $(linkTo).html('')
-            }
-        }
-    })
-    $(document).on('change', '.changeDocName', (e) => {
-        var lawJudgType = document.getElementById("Command_LawJudgTypeId");
-        var lawJudgNumber = document.getElementById("Command_DocNumber");
-        var trichYeu = document.getElementById("Command_TrichYeu");
-        var publishDate = document.getElementById("Command_PublishDateText");
-        var court = document.getElementById("Command_CourtId");
-        var lawJudgName = document.getElementById("Command_Title");
-        var lawJudgTypeName = '', courtName = '', lawJudgTypeId = 0, courtId = 0;
-        var lawJudgNumberValue = '', trichYeuValue = '', publishDateValue = '';
-        if ($(lawJudgType).length && lawJudgType.selectedIndex >= 0) {
-            lawJudgTypeId = lawJudgType.value;
-            lawJudgTypeName = lawJudgType.options[lawJudgType.selectedIndex].text == "..." ? "" : lawJudgType.options[lawJudgType.selectedIndex].text;
-        }
-        if ($(court).length && court.selectedIndex >= 0) {
-            courtId = court.value;
-            courtName = court.options[court.selectedIndex].text == "..." ? "" : court.options[court.selectedIndex].text;
-        }
-        if (lawJudgNumber != null && lawJudgNumber.length) {
-            lawJudgNumberValue = lawJudgNumber.value;
-        }
-        if (publishDate != null && publishDate.length) {
-            publishDateValue = publishDate.value.replaceAll('-', '/');
-        }
-        if (trichYeu != null && trichYeu.length) {
-            trichYeuValue = trichYeu.value;
-        }
-        if (lawJudgName != null && lawJudgName.length) {
-            lawJudgName.value = lawJudgTypeName + " số " + lawJudgNumberValue + " ngày " +
-                publishDateValue + " của " + courtName + " về " + trichYeuValue;
-        }
-
-
-    })
-    $(document).on('keypress keyup blur', '.data-maxlength', (e) => {
-        var self = $(e.target)
-        var value = self.val();
-
-        var dataOverflow = self.data('length')
-        var sib = self.siblings('.text-limit,.text-limit2')
-        if (value.length > dataOverflow) {
-            sib.addClass('maxlength-overflow')
-        }
-        else {
-            sib.removeClass('maxlength-overflow')
-        }
-
     })
 
     $(document).on('change', '.block-data-sticky', (e) => {
@@ -732,25 +417,6 @@ $(function () {
         }
     })
 
-    $(document).on('change', '.select-news-category', (e) => {
-        var target = $(e.target), form = target.closest('form'),
-            option = target.find('option:selected'),
-            lft = $(option).attr('data-lft'), rgt = $(option).attr('data-rgt')
-
-        if (form) {
-
-            if (lft && rgt) {
-
-                form.find('input#Query_lft').val(lft)
-
-                form.find('input#Query_rgt').val(rgt)
-
-            }
-
-            form.submit()
-        }
-    })
-
     $(document).on('click', '.json-view-detail', (e) => {
         const target = e.target, title = $(target).attr('title') || '',
             jsonData = $(target).closest('td').find('.json-view')
@@ -766,63 +432,6 @@ $(function () {
         }
     })
 
-    //$(document).on('click', '.contentRaw', (e) => {
-    //    var target = $(e.currentTarget);
-    //    console.log(target)
-    //    var td = target.closest('td');
-    //    console.log(1123, td)
-    //    if (td.length > 0) {
-    //        var content = td.find('.contenthtml')
-    //        console.log(content)
-    //        if (content.length > 0) {
-    //            content.removeClass('d-none')
-    //        }
-    //    }
-    //    initCkEditor($('.ckeditor-input-content'));
-    //})
-    $(document).on('click', '.btn-up-file-to-textbox, .btn-up-file-to-textbox *', (e) => {
-        const ip = $(e.target).hasClass('btn-up-file-to-textbox') ? $(e.target) : $(e.target).closest('.btn-up-file-to-textbox');
-        var dataType = ip.attr('data-DataType'),
-            fileTypeId = ip.attr('data-FileTypeId'),
-            dataId = ip.attr('data-DataId'),
-            IsNoAutoReplaceName = ip.attr('data-IsNoAutoReplaceName') ?? 0;
-
-        if (dataType == null || typeof dataType == undefined || dataType == '') {
-            if ($('#Command_DataType').length) {
-                dataType = $('#Command_DataType').val();
-            }
-        }
-        if (dataId == null || typeof dataId == undefined || dataId == 0) {
-            if ($('#Command_DataId').length) {
-                dataId = $('#Command_DataId').val();
-            }
-        }
-
-        var resultId = '';
-        elementAction = ip;
-        var parent = ip.closest('.box-upload');
-        if (parent != null && parent.length) {
-            var elementResult = parent.find('input').first();
-            if (elementResult.length) {
-                resultId = elementResult.attr('id');
-            }
-        }
-
-        if (dataType && fileTypeId && dataId) {
-            $('#fileUploadCreateCommand_DataType').val(dataType);
-            $('#fileUploadCreateCommand_FileTypeId').val(fileTypeId);
-            $('#fileUploadCreateCommand_DataId').val(dataId);
-            $('#fileUploadCreateCommand_ElementResultId').val(resultId);
-
-            if (IsNoAutoReplaceName > 0 && $('#fileUploadCreateCommand_IsNoAutoReplaceName').length) {
-                $('#fileUploadCreateCommand_IsNoAutoReplaceName').val(true);
-            }
-            $('#FileUploads').closest('form').attr('data-ajax-progress', 'progress' + dataType + '_' + fileTypeId + '_' + dataId);
-            $('#FileUploads').trigger('click');
-            return false;
-        }
-    });
-
     $(document).on('blur', 'input[id^="selectImgInput"]', (e) => {
         var self = $(e.currentTarget), id = self.attr('id') + '',
             mediaKey = id.replace('selectImgInput', ''),
@@ -835,12 +444,6 @@ $(function () {
         } else {
             selectMediaView.addClass('d-none')
         }
-    })
-    $(document).on('change', '.searchBy', (e) => {
-        var self = $(e.target),
-            value = self.val();
-        $('.searchDocRef').data('url', '/LuatVietNamDoc/Docs?handler=SearchDocs&searchBy=' + value + '')
-        initSelect2AutoComplete($('.searchDocRef'))
     })
 
     $(document).on('blur', 'input[id^="SelectMediaInput"]', (e) => {
@@ -866,204 +469,10 @@ $(function () {
         }
     })
 
-    $(document).on('blur', '.gen-slug', (e) => {
-        var slug = removeSignatureForURL($('.gen-slug').val());
-        $('input[id ="Command_Slug"]').val(slug)
-    })
-
     $(document).on('click', 'button[type="submit"]', (e) => {
-        for (let instance in CKEDITOR.instances) {
-            CKEDITOR.instances[instance].updateElement();
-        }
         elementAction = $(e.currentTarget)
     })
-    $(document).on('change', '.select-courtLevel', (e) => {
-        var self = $(e.target);
-        var value = self.find('option:selected').val();
-        var courstId = self.data('courtid');
-        var id = self.data('id');
-        var urlRequest = self.data('url') || '';
-        if (urlRequest.trim().length > 0) {
-            var data = {};
-            data[id] = value;
-            if (value > 0) {
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    data: data,
-                }).then(response => {
 
-                    var html = '<option value=0>...</option>'
-                    $.each(response, function (index, data) {
-                        html += '<option value=' + data.id + '>' + data.courtDesc + '</option>'
-                    })
-
-                    $('.select-court').html(html)
-                    $(courstId).html(html)
-                }).catch(error => {
-                    console.error("Error:", error);
-                });
-            }
-        }
-
-    })
-
-    $(document).on('mouseover', '.show-prop', function (e) {
-        var id = $(this).attr('data-id');
-
-        if ($('#doc_' + id).html() == null || $('#doc_' + id).html().length <= 0) {
-            var query = { id: parseInt(id.split('_')[0].replace(/\D/g, "")) };
-            $.ajax({
-                url: "/LuatVietNamDoc/Docs/Index?handler=DocProperties",
-                type: "GET",
-                contentType: 'application/json',
-                dataType: "html",
-                data: query,
-                success: function (response) {
-                    if (response) {
-                        var html = `<div class="div1-custom-hover"></div><div class="d-flex" onclick="event.stopPropagation()">`;
-                        html += response;
-                        html += '</div>'
-                        $('#doc_' + id).addClass('card card-bg');
-                        $('#doc_' + id).html(html)
-                    }
-                },
-                error: function (xhr, status, error) {
-                    toastMessage(false, "Vui lòng thử lại");
-                }
-            })
-        }
-        $(e.target).css('text-decoration', 'none');
-        if (e?.fromElement?.classList.contains('custom-hover')) return
-        let eleTarget = e.currentTarget
-        let bound = eleTarget.getBoundingClientRect()
-        let eleHover = e.currentTarget.nextElementSibling
-        var elementItem = document.getElementById('div_' + id)
-        var boundEleItem = elementItem.getBoundingClientRect()
-        if (!eleHover) return
-        eleHover.style.bottom = 'auto'
-        eleHover.style.right = 'auto'
-        eleHover.style.left = boundEleItem.right + 'px';
-        eleHover.style.top = bound.y + 'px';
-
-        let div1 = eleHover.getElementsByClassName('div1-custom-hover')[0]
-        if (div1) {
-            var heightdiv1 = $(this).height() + 20;
-            if (heightdiv1 < 50) {
-                heightdiv1 = 50
-            }
-            div1.style.height = heightdiv1 + 'px'
-            div1.style.width = '40px'
-            div1.style.right = (window.innerWidth - boundEleItem.right - 20) + 'px';
-            div1.style.left = 'auto';
-            // div1.style.top = boundEleItem.top + 'px';
-        }
-        let boundEleH = eleHover.getBoundingClientRect()
-        if (boundEleH.right >= (window.innerWidth || document.documentElement.clientHeightWidth)) {
-            eleHover.style.right = (window.innerWidth - boundEleItem.left - 20) + 'px';
-            eleHover.style.left = 'auto'
-            if (div1) {
-                div1.style.right = 'auto';
-                div1.style.left = boundEleItem.left + 'px'
-            }
-
-        }
-        if (boundEleH.bottom >= (window.innerHeight || document.documentElement.clientHeight)) {
-            eleHover.style.bottom = '20px'
-            eleHover.style.top = 'auto'
-        }
-
-    })
-
-    $(document).on('select2:select select2:unselect', '.select-cate', (e) => {
-        var self = $(e.target);
-        var values = self.val();
-        var legalId = self.data('legalid');
-        var id = self.data('id');
-        var cateIds = "";
-        $.each(values, function (item, value) {
-            if (value > 0 && item < values.length - 1)
-                cateIds += value + ','
-            else {
-                cateIds += value
-            }
-        })
-        var urlRequest = self.data('url') || '';
-        if (urlRequest.trim().length > 0) {
-            var data = {
-                cateIds: cateIds
-            };
-
-            if (cateIds.length > 0) {
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    data: { cateIds: cateIds },
-                }).then(response => {
-                    var html = '<option value=0>...</option>'
-                    $.each(response, function (index, data) {
-                        html += '<option value=' + data.id + '>' + data.title + '</option>'
-                    })
-                    //$('.select-court').html(html)
-                    $(legalId).html(html)
-                }).catch(error => {
-                    console.error("Error:", error);
-                });
-            }
-        }
-
-    })
-    $(document).on('select2:select select2:unselect', '.select-field', (e) => {
-        var self = $(e.target);
-        var values = self.val();
-        var laweId = self.data('lawerId');
-        var id = self.data('id');
-        var fieldIds = "";
-        $.each(values, function (item, value) {
-            if (value > 0 && item < values.length - 1)
-                fieldIds += value + ','
-            else {
-                fieldIds += value
-            }
-        })
-        var urlRequest = self.data('url') || '';
-        if (urlRequest.trim().length > 0) {
-            var data = {
-                fieldIds: fieldIds
-            };
-
-            if (fieldIds.length > 0) {
-                fetchData({
-                    url: urlRequest,
-                    type: 'get',
-                    data: { fieldIds: fieldIds },
-                }).then(response => {
-                    var html = '<option value=0>...</option>'
-                    $.each(response, function (index, data) {
-                        html += '<option value=' + data.id + '>' + data.title + '</option>'
-                    })
-                    //$('.select-court').html(html)
-                    $(laweId).html(html)
-                }).catch(error => {
-                    console.error("Error:", error);
-                });
-            }
-        }
-
-    })
-    $(document).on('change', '#Command_LawJudgTypeId', (e) => {
-        var self = $(e.target);
-        value = self.val();
-
-        if (parseInt(value) == 3) {
-            $(".is-ban-an").hide()
-            $(".is-an-le").show()
-        }
-        else {
-            $(".is-ban-an").show()
-            $(".is-an-le").hide()
-        }
-    })
     $(document).on('change', '.editor-media-checkbox', (e) => {
         let self = $(e.currentTarget), isChecked = self.is(':checked'),
             mediaId = self.val(), mediaName = self.attr('data-name') || '',
@@ -1090,494 +499,244 @@ $(function () {
             }
         }
     })
+    $(document).on('change', '.searchBy', (e) => {
+        var self = $(e.target),
+            value = self.val(),
+            isApi = $('input[name*=isUseApi]').is(":checked");
+        console.log(value)
+        $('.searchDocRef').data('url', '/BongDa24hDocs/Docs?handler=SearchDocs&isUseApi=' + isApi + '&searchBy=' + value + '')
+        initSelect2AutoComplete($('.searchDocRef'))
+    })
+    $(document).on('change', '.change-site', (e) => {
+        var self = $(e.target),
+            value = self.val(),
+            changeOption = self.data('change');
 
-    $(document).on('change', '.editor-news-checkbox', (e) => {
-        let self = $(e.currentTarget), isChecked = self.is(':checked'),
-            newsId = self.val(), title = self.attr('data-title') || '',
-            slug = self.attr('data-slug') || ''
+        if (value > 0) {
+            var elements = $('.' + changeOption)
+            if (elements.length > 0) {
+                elements.each(function (index) {
 
-        isExist = newsSelected.filter(x => x.id && x.id == newsId)
+                    var element = $(this);
+                    element.select2('destroy')
+                    element.attr("data-siteid", value);
+                    element.data("siteid", value);
+                    // element.val('').trigger('change')
+                    if (element.attr('data-value')) {
 
-        if (newsId.trim().length == 0) {
-            showMessage({ message: 'Vui lòng thử lại sau.' })
-            return
-        }
+                        element.attr('data-value', '');
+                        element.data("value", "");
+                        var searchUrl = element.data('url');
+                        if (searchUrl) {
+                            fetchData({
+                                type: 'GET',
+                                url: searchUrl + "&siteid=" + value,
+                                dataType: 'json',
+                            }).then(response => {
 
-        if (isChecked) {
-            if (isExist.length == 0) {
-                newsSelected.push({
-                    id: newsId,
-                    title: title,
-                    slug: slug
+                                if (response.Data[0]) {
+                                    var result = {
+                                        id: response.Data[0].id,
+                                        text: response.Data[0].text
+                                    }
+                                    console.log(result)
+                                    element.attr('data-value', (JSON.stringify(result)));
+                                    element.data("value", JSON.parse(JSON.stringify(result)));
+                                    element.data("format", "resultFormatData");
+                                    element.attr("data-format", "resultFormatData");
+                                    element.data("format-selection", "resultFormatDataSelection");
+                                    element.attr("data-format-selection", "resultFormatDataSelection");
+                                    element.val(result.id).trigger('change')
+                                }
+                            })
+
+                        }
+                    }
+                    initSelect2AutoComplete(element)
+
                 })
             }
-        } else {
-            if (isExist.length > 0) {
-                newsSelected.splice(isExist, 1)
-            }
+
         }
+
     })
-    $(document).on('change', '.select-lawjudgs', (e) => {
-        var self = $(e.target)
-        var lawJudgId = self.val();
-
-        if (parseInt(lawJudgId) > 0) {
-            $('.select-docs').attr('disabled', 'disabled')
-        }
-        else {
-            $('.select-docs').removeAttr('disabled')
-        }
-    })
-    $(document).on('change', '.select-docs', (e) => {
-        var self = $(e.target)
-        var docId = self.val();
-
-        if (parseInt(docId) > 0) {
-            $('.select-lawjudgs').attr('disabled', 'disabled')
-        }
-        else {
-            $('.select-lawjudgs').removeAttr('disabled')
-        }
-    })
-    $(document).on('click', '.btnCloseOffCanvas', (e) => {
-        var self = $(e.target)
-        if (CKEDITOR.instances['DocContent']) {
-            CKEDITOR.instances['DocContent'].setData('');
-        }
-
-        var offcanvas = self.closest('.offcanvas');
-        var bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas[0]);
-
-        if (bsOffcanvas) {
-            bsOffcanvas.hide();
-        }
-    })
-    $(document).on('click', 'button[data-confirm]', function (e) {
-        var self = $(this);
-        var confirmTitle = self.data('confirm');
-        var message = self.data('message') || '';
-        var form = self.closest('form');
-
-        e.preventDefault();
-
-        let buttons = {
-            confirm: {
-                text: "Đồng ý",
-                btnClass: 'btn btn-danger',
-                keys: ['enter'],
-                action: function () {
-
-                    // Đồng bộ dữ liệu CKEditor về textarea trước khi submit
-                    for (let instance in CKEDITOR.instances) {
-                        CKEDITOR.instances[instance].updateElement();
-                    }
-
-                    form.find('input[type="hidden"][data-temp-submit]').remove();
-
-                    $('<input>', {
-                        type: 'hidden',
-                        name: self.attr('name'),
-                        value: self.val(),
-                        'data-temp-submit': true
-                    }).appendTo(form);
-
-                    form.trigger('submit');
-                }
-            }
-        };
-
-        showMessage({
-            title: confirmTitle,
-            icon: 'fa fa-question-circle',
-            columnClass: 'col-md-6 col-md-offset-3',
-            message: message,
-            buttons: buttons
-        });
-    });
-    $(document).on('change', '.select-lawjudgs-modal', (e) => {
-        var self = $(e.target)
-        var lawJudgId = self.val();
-
-        if (parseInt(lawJudgId) > 0) {
-            $('.select-docs-modal').attr('disabled', 'disabled')
-        }
-        else {
-            $('.select-docs-modal').removeAttr('disabled')
-        }
-    })
-    $(document).on('change', '.select-docs-modal', (e) => {
-        var self = $(e.target)
-        var docId = self.val();
-
-        if (parseInt(docId) > 0) {
-            $('.select-lawjudgs-modal').attr('disabled', 'disabled')
-        }
-        else {
-            $('.select-lawjudgs-modal').removeAttr('disabled')
-        }
-    })
-    $(document).on('click', '.btn-add-doc', (e) => {
-        var self = $(e.target)
-        var lawJudgId = $("#Query_LawJudgId").val()
-        $('.text-validate .text-required').hide();
-        var lawJudgRelateTypeId = self.data('type');
-        var lawJudgRelateIds;
-        var docRelateIds;
-        var url = $(".reoloadUrl").data('ajax-success-url')
-        if (parseInt(lawJudgRelateTypeId) == 2 || parseInt(lawJudgRelateTypeId) == 3) {
-            docRelateIds = self.parent().prev().find(".select2-auto-complete-modal").val().join(",");
-        }
-        else {
-            lawJudgRelateIds = self.parent().prev().find(".select2-auto-complete-modal").val().join(",")
-        }
-        var command = {
-            lawJudgId: parseInt(lawJudgId),
-            lawJudgRelateTypeId: parseInt(lawJudgRelateTypeId),
-            lawJudgRelateIds: lawJudgRelateIds,
-            docRelateIds: docRelateIds,
-            reviewStatusId: 1
-        }
-
-        if ((lawJudgRelateIds == '' || !lawJudgRelateIds) && (!docRelateIds || docRelateIds == '')) {
-            self.closest('.box-relate').next('.text-validate ').find('.text-required').show();
-            return;
-        } else {
-            self.closest('.box-relate').next('.text-validate').find('.text-required').hide();
-
+    $(document).on('change', '.set-session', (e) => {
+        var self = $(e.target),
+            value = self.val();
+        var elementImgs = $('.upload-icon');
+        console.log(value)
+        if (value > 0) {
             $.ajax({
-                url: "/LuatVietNamBanAn/LawJudgRelates?handler=AddLawJudgRelates",
-                type: "POST",
-                contentType: 'application/json',
-                dataType: "json",
-                data: JSON.stringify(command),
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
-                },
+                url: '/BongDa24hDocs/Docs/Index?handler=SetSession',
+                type: 'GET',
+                dataType: 'json',
+                data: { siteId: parseInt(value) },
                 success: function (response) {
-                    if (response && response.Succeeded) {
 
-                        fetchData({
-                            type: 'GET',
-                            url: url,
-                            dataType: 'html',
-                        }).then(response => {
-                            $("#tblLawJudgRelate").html(response);
-                        })
-                    }
-                    toastMessage(response.Succeeded, response.Messages.join('<br />'))
-                    self.parent().prev().find(".select2-auto-complete-modal").val(0).trigger("change");
                 },
                 error: function (xhr, status, error) {
-                    toastMessage(false, "Vui lòng thử lại");
+                    console.error('Error setting session:', error);
                 }
+            });
+            if (elementImgs.length > 0) {
+                elementImgs.each(function () {
+                    var element = $(this);
+                    element.attr("data-siteid", value);
+                    element.data("siteid", value);
+                })
+            }
+
+        }
+    })
+    $(document).on('change', '.select2-auto-complete-modal', (e) => {
+        var self = $(e.target), parent = self.closest('.did-floating-label-content'), value = self.val();
+        var validate = parent.find('.text-danger');
+        if (validate.length > 0) {
+            if (value > 0) {
+                validate.addClass('text-danger d-none')
+            }
+            else {
+                validate.removeClass('d-none')
+
+            }
+        }
+    })
+    $(document).on('click', '.previewhtml', function (e) {
+        var url = $(e.target).data('url'), elementid = $(e.target).data('success-id');
+
+        if (url) {
+            fetchData({
+                type: 'GET',
+                url: url,
+                dataType: 'json',
+                beforeSend: function () {
+                    if ($(e.target).prop('tagName') != 'FORM') {
+                        $(e.target).attr('disabled', 'disabled')
+                        $(e.target).data('og', $(e.target).html())
+                        if ($(e.target).hasClass('cke_element')) {
+                            $(e.target).html('<span style="padding: 0 5px;">Vui lòng đợi...</span>')
+                        } else if ($(e.target).hasClass('cke_button')) {
+                            $(e.target).html('<span style="padding: 0 2px;">...</span>')
+                        } else {
+                            $(e.target).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>')
+                        }
+                    }
+                },
+            }).then(response => {
+                $("#" + elementid).addClass('p-5')
+                $("#" + elementid).html(response.Data)
+                removeLoading($(e.target))
+                $('html, body').animate({
+                    scrollTop: $("#" + elementid).offset().top - 50
+                }, 400);
             })
         }
     })
-    $(document).on('click', '.btn-add-link', (e) => {
-        var self = $(e.target);
-        var urladd = self.data('ajax-url');
-        var urlSuccess = self.data('ajax-success-url');
-        var succesId = self.data('ajax-success-id')
-        var lawJudgId = $('#Item3_LawJudgId').val();
-        var textContent = $('#Item3_TextContent').val();
-        var link = $('#Item3_Link').val();
-        var linkLawJudgIds = $('#Item3_LinkLawJudgId').val();
-        var linkDocIds = $('#Item3_LinkDocId').val();
-        var linkDocItemId = $('#Item3_LinkDocItemId').val();
+    $(document).on('click', '.btn-up-file, .btn-up-file *', (e) => {
+        var target = e.target, self = $(target),
+            ip = $(e.target).hasClass('btn-up-file') ? $(e.target) : $(e.target).closest('.btn-up-file'),
+            docId = ip.attr('data-docid'),
+            ajaxUrl = ip.attr('data-ajax-url'),
+            siteId = ip.attr('data-siteid'),
+            parent = self.closest('.uploadgroup'),
+            dataSourceId = parent.find("select[name*=DataSourceId]").first().find(":selected").val(),
+            fileTypeId = parent.find("select[name*=FileTypeId]").first().find(":selected").val(),
+            isFileStandard = parent.find("input[name*=IsFileStandard]").first().prop('checked'),
+            fileElement = parent.find("input[name*=FromFiles]").first();
+        var files = $(fileElement).prop('files');
 
-        var linkLawJudgId = linkLawJudgIds[0];
-        var linkDocId = linkDocIds[0];
-        var command = {
-            LawJudgId: parseInt(lawJudgId),
-            TextContent: textContent,
-            Link: link,
-            LinkLawJudgId: parseInt(linkLawJudgId),
-            LinkDocId: parseInt(linkDocId),
-            LinkDocItemId: parseInt(linkDocItemId)
-        }
-        $.ajax({
-            url: urladd,
-            type: "POST",
-            contentType: 'application/json',
-            dataType: "json",
-            data: JSON.stringify(command),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
-            },
-            success: function (response) {
-                if (response && response.Succeeded) {
+        if (files.length > 0) {
 
-                    fetchData({
-                        type: 'GET',
-                        url: urlSuccess,
-                        dataType: 'html',
-                    }).then(response => {
-                        $(succesId).html(response);
-                    })
-                }
-                toastMessage(response.Succeeded, response.Messages.join('<br />'))
-                $('#Item3_Link').val('');
-                $('#Item3_TextContent').val('');
-            },
-            error: function (xhr, status, error) {
-                toastMessage(false, "Vui lòng thử lại");
+            elementAction = ip;
+
+            if (docId && siteId) {
+
+                $('#FileCommand_DocId').val(docId);
+                $('#FileCommand_SiteId').val(siteId);
+                $('#FileCommand_DataSourceId').val(dataSourceId);
+                $('#FileCommand_FileTypeId').val(fileTypeId);
+                $('#FileCommand_IsFileStandard').val(isFileStandard);
+                $('#FileUploads').closest('form').attr('data-ajax-progress', 'progress_' + docId);
+                $('#FileUploads').closest('form').attr('data-ajax-url', ajaxUrl);
+                //$('#FileUploads').trigger('click');
+                $('#FileUploads').val('');
+                for (var i = 0; i < files.length; i++) {
+                    var file = files[i];
+                    $('#FileUploads').prop('files', files);
+                };
+                $('#FileUploads').closest('form').submit();
+
+                return false;
             }
-        })
-        initSelect2AutoComplete($('.select2-auto-complete-modal'))
-        $('#Item3_Link').val('');
-        $('#Item3_TextContent').val('');
+        } else {
+            toastMessage(false, "Vui lòng chọn file!")
+        }
     })
+    //$(document).on('click', '.btn-addmore', function () {
+    //    var element = $(this);
+    //    $('input[type="checkbox"][name*="AddMoreData"]').attr('checked', 'checked')
+
+    //})
     if (cardHeaderSecondary.length) {
         $(window).scroll(function () {
             cardHeaderSecondary.toggleClass('fix-header', $(window).scrollTop() > cardHeaderSecondary.position().top);
         });
     }
 
-    $(document).on('click', '.edit-parent', function (e) {
-        var self = $(this);
-        var td = self.closest('td');
-        var parentName = td.find('.parentName')
-        var newParent = td.find('.newParent')
-        var docId = $(this).data('docid');
-        var docitemId = $(this).data('docitemid')
-        var parentId = parseInt($(this).data('parentid'))
-        if (parentName.length > 0) {
-            parentName.addClass('d-none')
-        }
-        if (newParent.length > 0) {
-            newParent.removeClass('d-none')
-        }
-        $.ajax({
-            type: 'GET',
-            url: "/LuatVietNamDocItem/DocItemFulls/Index?handler=NeartestParent",
-            data: {
-                docId: docId,
-                docItemId: docitemId
-            },
-            contentType: 'application/json',
-            dataType: 'json',
-            success: function (data) {
-                var html = '<option value=0>...</option>'
-                var selected = '';
-                if (data) {
-                    $.each(data, function (i, item) {
-                        if (item.id == parentId) {
-                            selected = 'selected';
-                        }
-                        html += '<option ' + selected + ' value=' + item.id + '>' + item.name + '</option>'
-                    })
-                    newParent.html(html)
-
-                }
-            }
-        })
-        $(document).one("click", function () {
-            newParent.addClass('d-none');
-            parentName.removeClass('d-none');
-
-        });
-        $('.newParent').on("click", function (e) {
-            e.stopPropagation();
-        });
-    })
-    $(document).on('click', '.edit-level', function (e) {
-        var self = $(this);
-        var td = self.closest('td');
-        var levelName = td.find('.levelname')
-        var newLevel = td.find('.newLevel')
-        var levelId = parseInt($(this).data('levelid'))
-        if (levelName.length > 0) {
-            levelName.addClass('d-none')
-        }
-        if (newLevel.length > 0) {
-            newLevel.removeClass('d-none')
-        }
-        $.ajax({
-            type: 'GET',
-            url: "/LuatVietNamDocItem/DocItemFulls/Index?handler=ListDocItemLevel",
-            dataType: 'json',
-            success: function (data) {
-                var html = '<option value=0>...</option>'
-
-                if (data) {
-                    $.each(data, function (i, item) {
-                        var selected = '';
-                        if (item.id == levelId) {
-                            selected = 'selected';
-                        }
-                        html += '<option ' + selected + ' value=' + item.id + '>' + item.name + '</option>'
-
-                    })
-                    newLevel.html(html)
-
-                }
-            }
-        })
-        $(document).one("click", function () {
-            newLevel.addClass('d-none');
-            levelName.removeClass('d-none');
-
-        });
-        $('.newLevel').on("click", function (e) {
-            e.stopPropagation();
-        });
-    })
-    $(".edit-info").on({
-        mouseenter: function () {
-            var self = $(this);
-            var td = self.closest('td');
-            var edit = td.find('.edit-level')
-            if (edit.length > 0) {
-                edit.removeClass('d-none')
-            }
-        },
-        mouseleave: function () {
-            var self = $(this);
-            var td = self.closest('td');
-            var edit = td.find('.edit-level')
-            if (edit.length > 0) {
-                edit.addClass('d-none')
-            }
-        }
-    });
-    $(document).on('click', '.edit-parent-temp', function (e) {
-        var self = $(this);
-        var td = self.closest('td');
-        var parentName = td.find('.parentName')
-        var newParent = td.find('.newParent')
-        var docId = $(this).data('doctempid');
-        var docitemId = $(this).data('id')
-        var parentId = parseInt($(this).data('parentid'))
-        if (parentName.length > 0) {
-            parentName.addClass('d-none')
-        }
-        if (newParent.length > 0) {
-            newParent.removeClass('d-none')
-        }
-        $.ajax({
-            type: 'GET',
-            url: "/LuatVietNamDocItem/DocItemFullTemps/Index?handler=NeartestParent",
-            data: {
-                docId: docId,
-                docItemId: docitemId
-            },
-            contentType: 'application/json',
-            dataType: 'json',
-            success: function (data) {
-                var html = '<option value=0>...</option>'
-                var selected = '';
-                if (data) {
-                    $.each(data, function (i, item) {
-                        if (item.id == parentId) {
-                            selected = 'selected';
-                        }
-                        html += '<option ' + selected + ' value=' + item.id + '>' + item.name + '</option>'
-                    })
-                    newParent.html(html)
-
-                }
-            }
-        })
-        $(document).one("click", function () {
-            newParent.addClass('d-none');
-            parentName.removeClass('d-none');
-
-        });
-        $('.newParent').on("click", function (e) {
-            e.stopPropagation();
-        });
-    })
-    $(document).on('click', '.edit-level-temp', function (e) {
-        var self = $(this);
-        var td = self.closest('td');
-        var levelName = td.find('.levelname')
-        var newLevel = td.find('.newLevel')
-        var levelId = parseInt($(this).data('levelid'))
-        if (levelName.length > 0) {
-            levelName.addClass('d-none')
-        }
-        if (newLevel.length > 0) {
-            newLevel.removeClass('d-none')
-        }
-        $.ajax({
-            type: 'GET',
-            url: "/LuatVietNamDocItem/DocItemFullTemps/Index?handler=ListDocItemLevel",
-            dataType: 'json',
-            success: function (data) {
-                var html = '<option value=0>...</option>'
-
-                if (data) {
-                    $.each(data, function (i, item) {
-                        var selected = '';
-                        if (item.id == levelId) {
-                            selected = 'selected';
-                        }
-                        html += '<option ' + selected + ' value=' + item.id + '>' + item.name + '</option>'
-
-                    })
-                    newLevel.html(html)
-
-                }
-            }
-        })
-        $(document).one("click", function () {
-            newLevel.addClass('d-none');
-            levelName.removeClass('d-none');
-
-        });
-        $('.newLevel').on("click", function (e) {
-            e.stopPropagation();
-        });
-    })
-    $(".edit-info-temp").on({
-        mouseenter: function () {
-            var self = $(this);
-            var td = self.closest('td');
-            var edit = td.find('.edit-level-temp')
-            if (edit.length > 0) {
-                edit.removeClass('d-none')
-            }
-        },
-        mouseleave: function () {
-            var self = $(this);
-            var td = self.closest('td');
-            var edit = td.find('.edit-level-temp')
-            if (edit.length > 0) {
-                edit.addClass('d-none')
-            }
-        }
-    });
-
-
     verticalNavbarInit()
 
-    stickyHeaderTableInit()
 
     flatpickrInit()
-    flatpickrTimeInit()
 
     initViewMaxLength()
 
     initCkEditor()
-    initCkEditorInline()
 
     initSelect2AutoComplete()
 
-    initAutocomplete()
-
     initTooltip()
 
-    initDocReviewStatusCount()
-
-    initDocReviewReviewStatusCount()
-
-    initDocStandardReviewStatusCount()
-
-    initTooltipDocProperties()
-
-    initTooltipDocProperties2()
+    initSystemNotification()
+    stickyHeaderTableInit()
 
 })
+var systemNotiInterval;
+var NotifyMaintenanceKey = "NOTIFY_MAINTENANCE_CMS";
+
+let dataSystemUpdate = () => {
+    return fetchData({
+        type: 'get',
+        url: '/?handler=SystemUpdate',
+        dataType: 'json',
+        cache: true
+    })
+}
+
+var initSystemNotification = () => {
+    //try {
+    //    if (systemNotiInterval) {
+    //        clearInterval(systemNotiInterval)
+    //    }
+    //    getCmsUpdateNoti();
+
+    //    systemNotiInterval = setInterval(getCmsUpdateNoti, 30000);
+
+    //} catch {
+    //    if (systemNotiInterval) {
+    //        clearInterval(systemNotiInterval)
+    //    }
+    //}
+
+}
+var getCmsUpdateNoti = async () => {
+    let [dataSystemUpdateResponse] = await Promise.all([dataSystemUpdate()]).catch((e) => { console.log(e) });
+    if (dataSystemUpdateResponse.Succeeded && dataSystemUpdateResponse.Data && dataSystemUpdateResponse.Data.SettingValue.length > 0 && dataSystemUpdateResponse.Data.SettingValue != '0') {
+        showToastSystem(false, dataSystemUpdateResponse.Data.SettingValue);
+    } else {
+        localStorage.setItem(NotifyMaintenanceKey, '1');
+        hideToastSystem();
+    }
+}
 
 var initTooltip = (parent) => {
     if (parent) {
@@ -1589,202 +748,14 @@ var initTooltip = (parent) => {
         $('[data-bs-toggle="tooltip"]').tooltip()
     }
 }
-
 var initViewMaxLength = () => {
     if ($('div.view-maxlength').length) {
         $('div.view-maxlength').maxlength()
     }
 };
-var initCkEditorInline = (element) => {
-    const editorInline = element || $('.ckeditor-div-inline');
 
-    if (editorInline.length > 0) {
-        editorInline.each((index, item) => {
-            var input = $(item), config = input.data('config') || 'basic', mode = input.data('mode') || ''
-            maxlength = input.attr('maxlength'), backgroundColor = input.data('bg-color') || '#fff'
-            height = input.data('height') || '200px',
-                input.attr('contenteditable', 'true');
-            if (CKEDITOR.instances[input.attr('id')]) {
-                const editor = CKEDITOR.instances[input.attr('id')];
-                //   editor.destroy(false);
-            }
-            setTimeout(() => {
-                var editor = CKEDITOR.inline(input.attr('id'), {
-                    disableAutoInline: true,
-                    disableNativeSpellChecker: false,
-                    removePlugins: 'scayt,wsc',        // Xóa các plugin kiểm tra chính tả nếu có
-                    scayt_autoStartup: true,
-                    versionCheck: false,
-                    scayt_autoStartup: false,
-                    customConfig: `/vendors/ckeditor/configs/${config}.js`,
-                    maxLength: maxlength,
-                    height: height,
-                    shouldNotGroupWhenFull: true,
-                    on: {
-                        instanceReady: function (ev) {
-                            const self = this;
-                            const editable = self.editable();
-                            const editableEl = editable.$;
-                            const toolbar = self.ui.space('top');
-                            const container = editableEl.closest('.contentItem');
-
-                            // Tắt spellcheck của trình duyệt trong vùng soạn thảo
-                            ev.editor.editable().$.setAttribute('spellcheck', 'false');
-
-                            // 🎨 Nền editor
-                            editable.setStyle('background-color', backgroundColor);
-
-                            // 📐 Căn toolbar
-                            function positionToolbar() {
-                                if (!toolbar || !container) return;
-                                const rect = container.getBoundingClientRect();
-                                toolbar.setStyle('position', 'fixed');
-                                toolbar.setStyle('top', '25px');
-                                toolbar.setStyle('left', `${rect.left}px`);
-                                toolbar.setStyle('width', `${rect.width}px`);
-                                toolbar.setStyle('z-index', '9999');
-                                toolbar.setStyle('background', '#fff');
-                                toolbar.setStyle('box-shadow', '0 2px 5px rgba(0,0,0,0.1)');
-                            }
-
-                            positionToolbar();
-
-                            // 🔁 Update toolbar position when resize
-                            window.addEventListener('resize', positionToolbar);
-
-                            // 👁‍🗨 Toggle toolbar
-                            let toolbarHidden = false;
-                            function toggleToolbar(hidden) {
-                                const toolbarContainer = document.getElementById('cke_' + self.name);
-                                if (!toolbarContainer) return;
-
-                                toolbarContainer.querySelectorAll('.cke_toolbar').forEach(tb => {
-                                    tb.style.display = hidden ? 'none' : '';
-                                });
-
-                                const topBar = toolbarContainer.querySelector('.cke_top');
-                                if (topBar) topBar.style.display = hidden ? 'none' : '';
-
-                                if (hidden) {
-                                    editable.addClass('editor-hide-border');
-                                } else {
-                                    editable.removeClass('editor-hide-border');
-                                }
-
-                                toolbarHidden = hidden;
-                            }
-
-                            // 📌 Ẩn khi cuộn nhiều
-                            let lastScrollY = window.scrollY;
-                            const scrollThreshold = 30;
-                            function handleScroll() {
-                                const currentY = window.scrollY;
-                                const delta = Math.abs(currentY - lastScrollY);
-                                if (delta >= scrollThreshold && !toolbarHidden) {
-                                    toggleToolbar(true);
-                                }
-                                lastScrollY = currentY;
-                            }
-
-                            // 👇 Ẩn khi giữ Shift/Alt
-                            function checkModifierKeys(e) {
-                                const shouldHide = e.getModifierState('Shift') || e.getModifierState('Alt');
-                                if (shouldHide && !toolbarHidden) toggleToolbar(true);
-                                else if (!shouldHide && toolbarHidden && self.focusManager.hasFocus) toggleToolbar(false);
-                            }
-
-                            // 👁‍🗨 Quan sát editor trong khung nhìn
-                            const observer = new IntersectionObserver((entries) => {
-                                entries.forEach(entry => {
-                                    if (entry.target === editableEl) {
-                                        if (!entry.isIntersecting && !toolbarHidden) toggleToolbar(true);
-                                        else if (entry.isIntersecting && toolbarHidden && self.focusManager.hasFocus) toggleToolbar(false);
-                                    }
-                                });
-                            }, { threshold: 0.01 });
-                            observer.observe(editableEl);
-
-                            // 🔗 Sự kiện focus/blur
-                            self.on('focus', () => {
-                                document.addEventListener('keydown', checkModifierKeys);
-                                document.addEventListener('keyup', checkModifierKeys);
-                                document.addEventListener('pointermove', checkModifierKeys);
-                                window.addEventListener('scroll', handleScroll);
-                                toggleToolbar(false);
-                                positionToolbar();
-                            });
-
-                            self.on('blur', () => {
-                                document.removeEventListener('keydown', checkModifierKeys);
-                                document.removeEventListener('keyup', checkModifierKeys);
-                                document.removeEventListener('pointermove', checkModifierKeys);
-                                window.removeEventListener('scroll', handleScroll);
-                                toggleToolbar(true);
-                            });
-                        },
-                        afterCommandExec: function (evt) {
-                            if (evt.data.name == 'indent' || evt.data.name == 'outdent') {
-                                var selection = this.getSelection();
-                                var ranges = selection.getRanges();
-                                ranges.forEach(function (range) {
-                                    var startContainer = range.startContainer.getAscendant('p', true);
-                                    if (startContainer) {
-                                        var style = startContainer.getAttribute('style');
-                                        if (style && style.includes('text-indent')) {
-                                            style = style.replace(/text-indent:\s*[^;]+;?/gi, '');
-                                            if (style.trim() === '') {
-                                                startContainer.removeAttribute('style');
-                                            } else {
-                                                startContainer.setAttribute('style', style);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
-
-                    },
-                    loaded: function () {
-                        // Thêm CSS custom
-                        CKEDITOR.addCss(
-                            '.cke_toolbar { max-width: 600px !important; margin: 0 auto !important; }'
-                        );
-                    }
-                })
-                if (editor) {
-                    editor.on('change', function () {
-                        var newContent = editor.getData();
-                        var id = input.data('id');
-                        var url = input.data('update-url')
-                        var command = {
-                            id: parseInt(id),
-                            docItemContentHtml: newContent
-                        }
-                        $.ajax({
-                            url: url,
-                            method: 'post',
-                            dataType: 'json',
-                            contentType: 'application/json',
-                            data: JSON.stringify(command),
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
-                            },
-                            success: function (response) {
-                                //toastMessage(response.Succeeded, response.Messages.join('<br />'))
-                            },
-                            error: function (xhr, status, error) {
-                                toastMessage(false, "Vui lòng thử lại sau")
-                            }
-                        })
-                    })
-                }
-            }, 1)
-        })
-    }
-}
-var initCkEditor = (element) => {
-    const editors = element || $('.ckeditor-input')
-
+var initCkEditor = () => {
+    const editors = $('.ckeditor-input')
     if (editors.length > 0) {
 
         editors.each((index, item) => {
@@ -1792,9 +763,20 @@ var initCkEditor = (element) => {
             maxlength = input.attr('maxlength'), backgroundColor = input.data('bg-color') || '#fff'
             height = input.data('height') || '200px'
             if (mode == 'inline') {
-                input.attr('contenteditable', 'true');
+
                 CKEDITOR.inline(input.attr('id'), {
-                    disableAutoInline: true,
+                    disableNativeSpellChecker: true,
+                    versionCheck: false,
+                    scayt_autoStartup: false,
+                    customConfig: `/vendors/ckeditor/configs/${config}.js`,
+                    maxLength: maxlength,
+                    height: height
+                })
+
+            } else {
+
+                CKEDITOR.replace(input.attr('id'), {
+                    entities: false,
                     disableNativeSpellChecker: true,
                     versionCheck: false,
                     scayt_autoStartup: false,
@@ -1808,56 +790,9 @@ var initCkEditor = (element) => {
                     }
                 })
 
-            } else {
-
-                CKEDITOR.replace(input.attr('id'), {
-                    entities: false,
-                    disableNativeSpellChecker: true,
-                    versionCheck: false,
-                    scayt_autoStartup: false,
-                    removeEmpty: true,
-                    extraAllowedContent: '',
-                    customConfig: `/vendors/ckeditor/configs/${config}.js`,
-                    maxLength: maxlength,
-                    height: height,
-                    on: {
-                        instanceReady: function (evt) {
-                            this.editable().setStyle('background-color', backgroundColor);
-                            var editor = evt.editor;
-
-                            var indentCommand = editor.getCommand('outdent');
-                            indentCommand.refresh = function (editor, path) {
-                                this.setState(CKEDITOR.TRISTATE_ON);
-                            };
-                        },
-
-                        afterCommandExec: function (evt) {
-                            if (evt.data.name == 'indent' || evt.data.name == 'outdent') {
-                                var selection = this.getSelection();
-                                var ranges = selection.getRanges();
-                                ranges.forEach(function (range) {
-                                    var startContainer = range.startContainer.getAscendant('p', true);
-                                    if (startContainer) {
-                                        var style = startContainer.getAttribute('style');
-                                        if (style && style.includes('text-indent')) {
-                                            style = style.replace(/text-indent:\s*[^;]+;?/gi, '');
-                                            if (style.trim() === '') {
-                                                startContainer.removeAttribute('style');
-                                            } else {
-                                                startContainer.setAttribute('style', style);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    }
-                })
-
             }
         })
     }
-    /* contentsCss: ['data:text/css,ol%2Cul%7Bfont-size%3Ainherit%20!important%3B%7D'],*/
     const editors2 = $('.ckeditor-input-2')
     if (editors2.length > 0) {
 
@@ -1874,7 +809,6 @@ var initCkEditor = (element) => {
                 scayt_autoStartup: false,
                 customConfig: `/vendors/ckeditor/configs/${config}.js`,
                 toolbar: [
-                    { name: 'insert', items: ['ListTable'] },
                     { name: 'styles', items: ['Styles'] },
                     { name: 'basicstyles', items: ['Bold', 'Italic'] },
                     { name: 'colors', items: ['TextColor', 'BGColor'] },
@@ -1882,98 +816,24 @@ var initCkEditor = (element) => {
                 ],
                 maxLength: maxlength,
                 height: height,
-                extraPlugins: 'listtable',
-                contentsCss: ['/css/ckeditor-custom.css'],
+                extraPlugins: 'stylescombo', // Thêm plugin stylescombo
+                stylesSet: [ // Định nghĩa các style tùy chỉnh
+                    { name: 'Mục lục 1', element: 'span', attributes: { 'class': 'heading1' } },
+                    { name: 'Mục lục 2', element: 'span', attributes: { 'class': 'heading2' } },
+                    { name: 'Mục lục 3', element: 'span', attributes: { 'class': 'heading3' } },
+                    { name: 'Mục lục 4', element: 'span', attributes: { 'class': 'heading4' } },
+                    { name: 'Mục lục 5', element: 'span', attributes: { 'class': 'heading5' } },
+                    { name: 'Mục lục 6', element: 'span', attributes: { 'class': 'heading6' } }
+                ],
                 on: {
-                    instanceReady: function (evt) {
+                    instanceReady: function () {
                         this.editable().setStyle('background-color', backgroundColor);
-                        var editor = evt.editor;
-
-                        var indentCommand = editor.getCommand('outdent');
-                        indentCommand.refresh = function (editor, path) {
-                            this.setState(CKEDITOR.TRISTATE_ON);
-                        };
                     },
-                    afterCommandExec: function (evt) {
-                        if (evt.data.name == 'indent' || evt.data.name == 'outdent') {
-                            var selection = this.getSelection();
-                            var ranges = selection.getRanges();
-                            ranges.forEach(function (range) {
-                                var startContainer = range.startContainer.getAscendant('p', true);
-                                if (startContainer) {
-                                    var style = startContainer.getAttribute('style');
-                                    if (style && style.includes('text-indent')) {
-                                        style = style.replace(/text-indent:\s*[^;]+;?/gi, '');
-                                        if (style.trim() === '') {
-                                            startContainer.removeAttribute('style');
-                                        } else {
-                                            startContainer.setAttribute('style', style);
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    }
                 }
             })
-
-
         })
     }
 
-    const editors3 = $('.ckeditor-input-3')
-    if (editors3.length > 0) {
-    }
-
-
-    editors3.each((index, item) => {
-        var input = $(item), config = input.data('config') || 'basic', mode = input.data('mode') || ''
-        maxlength = input.attr('maxlength'), backgroundColor = input.data('bg-color') || '#fff'
-        height = input.data('height') || '200px'
-
-        CKEDITOR.replace(input.attr('id'), {
-            entities: false,
-            disableNativeSpellChecker: true,
-            removePlugins: 'a11ychecker,toolbar',
-            versionCheck: false,
-            scayt_autoStartup: false,
-            toolbar: [],
-            maxLength: maxlength,
-            height: height,
-            on: {
-                instanceReady: function (evt) {
-                    this.editable().setStyle('background-color', backgroundColor);
-                    var editor = evt.editor;
-
-                    var indentCommand = editor.getCommand('outdent');
-                    indentCommand.refresh = function (editor, path) {
-                        this.setState(CKEDITOR.TRISTATE_ON);
-                    };
-                },
-                afterCommandExec: function (evt) {
-                    if (evt.data.name == 'indent' || evt.data.name == 'outdent') {
-                        var selection = this.getSelection();
-                        var ranges = selection.getRanges();
-                        ranges.forEach(function (range) {
-                            var startContainer = range.startContainer.getAscendant('p', true);
-                            if (startContainer) {
-                                var style = startContainer.getAttribute('style');
-                                if (style && style.includes('text-indent')) {
-                                    style = style.replace(/text-indent:\s*[^;]+;?/gi, '');
-                                    if (style.trim() === '') {
-                                        startContainer.removeAttribute('style');
-                                    } else {
-                                        startContainer.setAttribute('style', style);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-            }
-        })
-
-    })
 }
 
 var verticalNavbarInit = () => {
@@ -1996,7 +856,6 @@ var verticalNavbarInit = () => {
 }
 
 var stickyHeaderTableInit = () => {
-
     if ($('#sticky-table').length) {
         $('#sticky-table').bootstrapTable({
             stickyHeader: true,
@@ -2004,20 +863,7 @@ var stickyHeaderTableInit = () => {
         })
     }
 }
-var stickyHeaderTableModalInit = (element) => {
-    var self = element || modalPopup;
-    if (self) {
-        var offsetY = self.find('.modal-header').outerHeight();
-        if ($('#sticky-table-modal').length) {
-            var stickyHeadermodalOffsetY = self.offset().top + offsetY + window.scrollY;
 
-            $('#sticky-table-modal').bootstrapTable({
-                stickyHeader: true,
-                stickyHeaderOffsetY: stickyHeaderOffsetY
-            })
-        }
-    }
-}
 var modalPopup = $('#modalPopup'),
     modalDialog = modalPopup.find('.modal-dialog').first(),
     modalPopupTitle = modalPopup.find('.modal-title').first(),
@@ -2026,10 +872,6 @@ var modalPopup = $('#modalPopup'),
     modalDataDialog = modalDataPopup.find('.modal-dialog').first(),
     modalDataPopupTitle = modalDataPopup.find('.modal-title').first(),
     modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
-    modalData2Popup = $('#modalData2Popup'),
-    modalData2Dialog = modalData2Popup.find('.modal-dialog').first(),
-    modalData2PopupTitle = modalData2Popup.find('.modal-title').first(),
-    modalData2PopupContent = modalData2Popup.find('.modal-content').first(),
     modalSpotlightPopup = $('#modalSpotlightPopup'),
     modalSpotlightDialog = modalSpotlightPopup.find('.modal-dialog').first(),
     modalSpotlightPopupTitle = modalSpotlightPopup.find('.modal-title').first(),
@@ -2042,6 +884,10 @@ var modalPopup = $('#modalPopup'),
     toastMsg = $('#toastMsg'),
     toastHeader = toastMsg.find('.toast-header'),
     toastBody = toastMsg.find('.toast-body'), elementAction,
+    toastSystem = $('#toastMsgSystem'),
+    toastSystemHeader = toastSystem.find('.toast-header'),
+    toastSystemBody = toastSystem.find('.toast-body'),
+    toastSystemMini = $('#minNotifyMsgSystem'),
     tableActions = $('#table-actions'),
     tableReplaceElement = $('#table-replace-element'),
     stickyTable = $('#sticky-table'),
@@ -2061,6 +907,44 @@ toastMessage = (status, message) => {
 
     toastBody.html(message)
     toastMsg.toast('show');
+}
+showToastSystem = (status, message) => {
+
+    if (status == true) {
+        toastSystemHeader.removeClass('bg-danger').addClass('bg-primary');
+        toastSystemBody.removeClass('bg-danger-subtle').addClass('bg-primary-subtle').removeClass('text-danger').addClass('text-primary');
+    } else {
+        toastSystemHeader.removeClass('bg-primary').addClass('bg-danger');
+        toastSystemBody.removeClass('bg-primary-subtle').addClass('bg-danger-subtle').removeClass('text-primary').addClass('text-danger');
+    }
+
+    toastSystemBody.html(message);
+    toastSystemMini.find('.rounded-start').attr('data-bs-original-title', message).attr('aria-label', message);
+    const show = localStorage.getItem(NotifyMaintenanceKey);
+
+    if (show == null || show == '1') {
+
+        toastSystem.toast('show');
+        toastSystemMini.hide();
+    } else {
+        toastSystemMini.show();
+        toastSystem.toast('hide');
+
+    }
+    toastSystemMini.find('.rounded-start').off('click').on('click', function () {
+        toastSystemMini.hide();
+        toastSystem.toast('show');
+        localStorage.setItem(NotifyMaintenanceKey, '1');
+    });
+    toastSystem.find('.btn-close').off('click').on('click', function () {
+        localStorage.setItem(NotifyMaintenanceKey, '0');
+        toastSystem.toast('hide');
+        toastSystemMini.show();
+    });
+}
+hideToastSystem = () => {
+    toastSystem.toast('hide');
+    toastSystemMini.hide();
 }
 
 onBegin = form => {
@@ -2096,12 +980,33 @@ onBegin = form => {
     }
 }
 
+onBegin2 = form => {
+    let element = $(form),
+        buttonAction = element,
+        page = element.find('input[type="hidden"][name="page"]')
+
+    if (element.prop('tagName') == 'FORM') {
+        const buttonSubmit = element.find('button[type="submit"]');
+        if (buttonSubmit.length == 1) {
+            buttonAction = buttonSubmit
+        } else {
+            buttonAction = elementAction
+        }
+    }
+
+    if (page.length > 0) {
+        page.val(1)
+    }
+
+    elementAction = buttonAction
+}
+
 removeLoading = form => {
     let timeout
     let element = $(form),
         buttonAction = element
     elementAction = form
-
+    console.log(buttonAction)
     if (element.prop('tagName') == 'FORM') {
         buttonAction = element.find('button[type="submit"]:disabled')
     }
@@ -2142,64 +1047,41 @@ onLoginSuccessed = (form, xhr) => {
     }
 }
 
-onSuccessed = (form, xhr, resetHiddenField = false, isBindData = true, isReload = true, callback) => {
+onSuccessed = (form, xhr, resetHiddenField = false, isBindData = true) => {
     try {
-        var elementId = $(form).data('ajax-success-id');
+
         if (xhr.responseJSON.Succeeded) {
             const modal = $(form).closest('.modal'), modalId = modal.attr('id'),
-                refresh = xhr.responseJSON.RefreshModal,
-                autoClose = xhr.responseJSON.AutoClose;
+                modalParentId = modal.data('pid'), { callbacks, refresh } = form.dataset
 
-            if ($('input[type="checkbox"][name*="SubmitReload"]:checked').length) {
-                toastMessage(true, "Thêm mới thành công");
-                setTimeout(() => {
-                    window.location.href = window.location.origin + window.location.pathname;
-                }, 3000);
-            }
             if ($('input[type="checkbox"][name*="AddMoreData"]:checked').length) {
                 resetForm(form)
-            } else if (!xhr.responseJSON.ReturnUrl) {
-                if (autoClose && !refresh) {
-                    modalPopup.modal('hide');
-                    modal.modal('hide');
-                }
+            }
+            else if (!refresh && !xhr.responseJSON.ReturnUrl) {
+                modalPopup.modal('hide')
+                $(form).closest('.modal').modal('hide')
             }
 
             if (isBindData) {
-                if (elementId) {
-                    var element = $('#' + elementId);
-                    if (element) {
-                        bindData(xhr.responseJSON.Id, element)
-                    }
-                    else {
-                        bindData(xhr.responseJSON.Id)
-                    }
-                }
-                else {
-                    bindData(xhr.responseJSON.Id)
-                }
-
+                bindData(xhr.responseJSON.Id)
             }
-            else if (isReload) {
-                window.location.reload()
+            else {
+                location.reload();
             }
-
             if (xhr.responseJSON.ReturnUrl) {
                 window.open(xhr.responseJSON.ReturnUrl)
             }
 
-            if (xhr.responseJSON.RefreshModal) {
+            if (refresh) {
                 refreshModal(modalId)
             }
 
-            if (typeof callback === 'function') {
-                callback();
+            if (modalParentId) {
+                refreshModal(modalParentId)
             }
         }
-        if (xhr.responseJSON.Messages && xhr.responseJSON != null && xhr.responseJSON.Data != null) {
-            showValidationErrors(xhr.responseJSON.Data);
-        }
-        else if (xhr.responseJSON.Messages) {
+
+        if (xhr.responseJSON.Messages) {
             toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
         }
 
@@ -2209,8 +1091,51 @@ onSuccessed = (form, xhr, resetHiddenField = false, isBindData = true, isReload 
 
         resetTableActions()
 
-        //initCkEditor()
+        if (resetHiddenField) {
+            resetHiddenInput(form)
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
 
+onSuccessed2 = (form, xhr, resetHiddenField = false, isBindData = true, advertId) => {
+    try {
+
+        if (xhr.responseJSON.Succeeded) {
+            const modal = $(form).closest('.modal'), modalId = modal.attr('id'),
+                modalParentId = modal.data('pid'), { callbacks, refresh } = form.dataset
+
+            resetForm(form)
+
+            if (isBindData) {
+                bindData2(advertId, xhr.responseJSON.Id)
+            }
+            else {
+                location.reload();
+            }
+            if (xhr.responseJSON.ReturnUrl) {
+                window.open(xhr.responseJSON.ReturnUrl)
+            }
+
+            if (refresh) {
+                refreshModal(modalId)
+            }
+
+            if (modalParentId) {
+                refreshModal(modalParentId)
+            }
+        }
+
+        if (xhr.responseJSON.Messages) {
+            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
+        }
+
+        elementAction = form
+
+        removeLoading(form)
+
+        resetTableActions()
 
         if (resetHiddenField) {
             resetHiddenInput(form)
@@ -2219,57 +1144,301 @@ onSuccessed = (form, xhr, resetHiddenField = false, isBindData = true, isReload 
         console.log(e)
     }
 }
-onDownloadFileSuccessed = (form, xhr, resetHiddenField = false) => {
+
+onSuccessed3 = (form, xhr, resetHiddenField = false, isBindData = true, siteId = 0, advertPositionId = 0, categoryId = 0, dataTypeId = 0) => {
     try {
 
-        let result = xhr.responseJSON || xhr.responseText;
-        if (typeof result === "string") result = JSON.parse(result);
+        if (xhr.responseJSON.Succeeded) {
+            const modal = $(form).closest('.modal'), modalId = modal.attr('id'),
+                modalParentId = modal.data('pid'), { callbacks, refresh } = form.dataset
 
-        if (result.Succeeded) {
-            window.location.href = result.Data?.FilePathDomain;
-            // window.open(result.Data?.FilePathDomain, '_blank');
-        } else {
-            toastMessage(result.Succeeded, result.Messages.join('<br />'))
+            resetForm(form)
+
+            if (isBindData) {
+                bindData3(siteId, advertPositionId, categoryId, dataTypeId, xhr.responseJSON.Id)
+            }
+            else {
+                location.reload();
+            }
+            if (xhr.responseJSON.ReturnUrl) {
+                window.open(xhr.responseJSON.ReturnUrl)
+            }
+
+            if (refresh) {
+                refreshModal(modalId)
+            }
+
+            if (modalParentId) {
+                refreshModal(modalParentId)
+            }
         }
+
+        if (xhr.responseJSON.Messages) {
+            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
+        }
+
+        elementAction = form
+
         removeLoading(form)
+
+        resetTableActions()
+
+        if (resetHiddenField) {
+            resetHiddenInput(form)
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+onSuccessed4 = (form, xhr, resetHiddenField = false, isBindData = true, siteId = 0, advertPositionId = 0, categoryId = 0, dataTypeId = 0) => {
+    try {
+        if (xhr.responseJSON.Succeeded) {
+            const modal = $(form).closest('.modal'), modalId = modal.attr('id'),
+                modalParentId = modal.data('pid'), { callbacks, refresh } = form.dataset
+
+            if ($('input[type="checkbox"][name*="AddMoreData"]:checked').length) {
+                resetForm(form)
+            }
+            else if (!refresh && !xhr.responseJSON.ReturnUrl) {
+                /*modalPopup.modal('hide')*/
+                $(form).closest('.modal').modal('hide')
+            }
+
+            if (isBindData) {
+                bindData3(siteId, advertPositionId, categoryId, dataTypeId, xhr.responseJSON.Id)
+            }
+            else {
+                location.reload();
+            }
+            if (xhr.responseJSON.ReturnUrl) {
+                window.open(xhr.responseJSON.ReturnUrl)
+            }
+
+            if (refresh) {
+                refreshModal(modalId)
+            }
+
+            if (modalParentId) {
+                refreshModal(modalParentId)
+            }
+        }
+
+        if (xhr.responseJSON.Messages) {
+            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
+        }
+
+        elementAction = form
+
+        removeLoading(form)
+
+        resetTableActions()
+
+        if (resetHiddenField) {
+            resetHiddenInput(form)
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+bindData2 = (advertId, id, element) => {
+    id = id || ''
+    element = element || $('.table-responsive2')
+
+    const url = new URL(window.location.href),
+        path = url.pathname,
+        bindDataParamsElement = $('.bulk-select-replace-element'),
+        { callbacks } = $(element).get(0).dataset
+
+    if (bindDataParamsElement) {
+
+        const bindDataParams = bindDataParamsElement.data('params')
+
+        if (bindDataParams) {
+            $.each(bindDataParams, function (name, value) {
+                url.searchParams.set(name, value)
+            });
+        }
+    }
+
+    var query = url.search
+
+    //if ($('.not-found').length > 0) {
+    //    resetForm('.search-form')
+    //    historyPushState(path)
+    //}
+    if (query.length > 0) {
+        query = `&${query.substring(1)}`
+    }
+    fetchData({
+        type: 'GET',
+        url: `${path}/Position?handler=BindDataAdvertPosition${query}` + `&Query.AdvertId=${advertId}`,
+        dataType: 'html'
+    }).then(response => {
+
+        $(element).html(response)
+
+        const isEmpty = $(response).filter('table').
+            find('.not-found').first().length > 0
+
+        if (!isEmpty) {
+
+
+            if (id.length > 0) {
+                hightLightRow(id, element)
+            }
+
+            initTooltip()
+
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
+            }
+            stickyHeaderTableInit()
+        }
+    })
+}
+bindData3 = (siteId, advertPositionId, categoryId, dataTypeId, id, element) => {
+    id = id || ''
+    element = element || $('.table-responsive2')
+
+    const url = new URL(window.location.href),
+        path = url.pathname,
+        bindDataParamsElement = $('.bulk-select-replace-element'),
+        { callbacks } = $(element).get(0).dataset
+
+    if (bindDataParamsElement) {
+
+        const bindDataParams = bindDataParamsElement.data('params')
+
+        if (bindDataParams) {
+            $.each(bindDataParams, function (name, value) {
+                url.searchParams.set(name, value)
+            });
+        }
+    }
+
+    var query = url.search
+
+    //if ($('.not-found').length > 0) {
+    //    resetForm('.search-form')
+    //    historyPushState(path)
+    //}
+    if (query.length > 0) {
+        query = `&${query.substring(1)}`
+    }
+    fetchData({
+        type: 'GET',
+        url: `${path}/AddAdvert?handler=BindData${query}&Query.SiteId=${siteId}&Query.AdvertPositionId=${advertPositionId}&Query.CategoryId=${categoryId}&Query.DataTypeId=${dataTypeId}`,
+        dataType: 'html'
+    }).then(response => {
+
+        $(element).html(response)
+
+        const isEmpty = $(response).filter('table').
+            find('.not-found').first().length > 0
+
+        if (!isEmpty) {
+
+
+            if (id.length > 0) {
+                hightLightRow(id, element)
+            }
+
+            initTooltip()
+
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
+            }
+            stickyHeaderTableInit()
+        }
+    })
+}
+
+onUploadFileSuccessed = (element, xhr) => {
+    try {
+        removeLoading(element);
+        const btnUpFile = $('.btn-up-file');
+        if (btnUpFile.length) {
+            removeLoading(btnUpFile);
+            console.log(123, btnUpFile)
+        }
+        var btnUpFileTextbox = $('.btn-up-file-to-textbox');
+        if (btnUpFileTextbox.length) {
+            removeLoading(btnUpFileTextbox);
+        }
+        if (xhr.responseJSON.Messages) {
+            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
+        }
+        console.log(234, element)
+        if (xhr.responseJSON.Data != null) {
+            for (var i = 0; i < xhr.responseJSON.Data.length; i++) {
+                let isExist = mediaSelected.filter(x => x.id && x.id == xhr.responseJSON.Data[i].id)
+
+                if (isExist.length == 0) {
+                    mediaSelected.push({
+                        id: xhr.responseJSON.Data[i].id,
+                        name: xhr.responseJSON.Data[i].name,
+                        path: xhr.responseJSON.Data[i].path
+                    })
+                }
+            }
+        }
+
+        const getBlockDataButton = $('.media-search').first()
+
+        if (getBlockDataButton) {
+            $(getBlockDataButton).trigger('click')
+        }
+        //refresh
+        var docId, siteId, isFileStandard;
+        if ($('#FileCommand_DocId').length) {
+            docId = $('#FileCommand_DocId').val();
+        }
+        if ($('#FileCommand_SiteId').length) {
+            siteId = $('#FileCommand_SiteId').val();
+        }
+        if ($('#FileCommand_IsFileStandard').length) {
+            isFileStandard = $('#FileCommand_IsFileStandard').val();
+        }
+        if (docId != undefined && docId != undefined && docId != undefined) {
+            //Nếu là box uploadfile
+            removeLoading(element);
+            var idTable = 'table_' + docId;
+            var table = $('#' + idTable);
+            console.log(idTable)
+            if (table.length) {
+                var url = table.attr('data-ajax-url');
+                if (url != null) {
+                    fetchData({
+                        type: 'GET',
+                        url: url,
+                        dataType: 'html'
+                    }).then(response => {
+                        $(table).html(response);
+                    })
+                }
+            }
+        }
 
     } catch (e) {
         console.log(e)
     }
 }
 
-onDocIndexesSuccessed = (form, xhr) => {
-    try {
-
-        if (xhr.responseJSON.succeeded) {
-
-            toastMessage(true, "Cập nhật mục lục cho văn bản thành công");
-            setTimeout(() => {
-                window.location.reload()
-            }, 3000);
-
-        } else {
-            toastMessage(false, "Cập nhật mục lục cho văn bản không thành công");
-        }
-        removeLoading(form)
-
-    } catch (e) {
-        console.log(e)
-    }
-}
-function showValidationErrors(errors) {
-    $(".field-validation-error").text("");
-
-    $.each(errors, function (key, messages) {
-        var errorElement = $('[data-valmsg-for="Command.' + messages.PropertyName + '"]');
-        if (errorElement.length > 0) {
-            errorElement.append(`<span id=\"Command_${messages.PropertyName}-error\">${messages.ErrorMessage}</span>`);
-            errorElement.addClass("field-validation-error");
-        }
-    });
-}
-
-onSuccessedDataPopup = (form, xhr, resetHiddenField = false, isBindData = true, isResetForm = false) => {
+onSuccessedDataPopup = (form, xhr, resetHiddenField = false, isBindData = true) => {
     try {
         var url = $(form).data('ajax-success-url');
         var elementId = $(form).data('ajax-success-id');
@@ -2277,9 +1446,8 @@ onSuccessedDataPopup = (form, xhr, resetHiddenField = false, isBindData = true, 
         var elementHidden = $(form).data('hidden');
         if (xhr.responseJSON.Succeeded) {
 
-            if ($(form).find('input[type="checkbox"][name*="AddMoreData"]:checked').length || isResetForm) {
+            if ($(form).find('input[type="checkbox"][name*="AddMoreData"]:checked').length) {
                 resetForm(form);
-                //$(form).find('input[name*="IsAddOtherSource"]').prop('checked', true);
             }
             else if (!xhr.responseJSON.ReturnUrl) {
                 modalDataPopup.modal('hide')
@@ -2320,7 +1488,7 @@ onSuccessedDataPopup = (form, xhr, resetHiddenField = false, isBindData = true, 
                 window.open(xhr.responseJSON.ReturnUrl)
             }
         }
-        console.log(xhr.responseJSON.Messages)
+
         if (xhr.responseJSON.Messages) {
             toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
         }
@@ -2336,13 +1504,12 @@ onSuccessedDataPopup = (form, xhr, resetHiddenField = false, isBindData = true, 
                 resetHiddenInput(parent);
             }
         }
-        stickyHeaderTableInit()
-        stickyHeaderTableModalInit(modalDataPopup)
 
     } catch (e) {
         console.log(e)
     }
 }
+
 onSuccessedDataChildPopup = (form, xhr, resetHiddenField = false, isBindData = true) => {
     try {
         var url = $(form).data('ajax-success-url');
@@ -2353,7 +1520,7 @@ onSuccessedDataChildPopup = (form, xhr, resetHiddenField = false, isBindData = t
             if ($(form).find('input[type="checkbox"][name*="AddMoreData"]:checked').length) {
                 resetForm(form);
             } else if (!xhr.responseJSON.ReturnUrl) {
-                modalData2Popup.modal('hide')
+                modalDataChildPopup.modal('hide')
             }
             if (typeof elementIdList !== "undefined") {
                 var elementList = $('#' + elementIdList);
@@ -2369,7 +1536,7 @@ onSuccessedDataChildPopup = (form, xhr, resetHiddenField = false, isBindData = t
             }
 
             if (isBindData) {
-                // bindData(xhr.responseJSON.Id);
+                bindData(xhr.responseJSON.Id);
                 var element = $('#' + elementId);
                 if (element) {
                     fetchData({
@@ -2408,6 +1575,7 @@ onSuccessedDataChildPopup = (form, xhr, resetHiddenField = false, isBindData = t
         console.log(e)
     }
 }
+
 onSuccessedNativeAdvert = (form, xhr, resetHiddenField = false, isBindData = true) => {
     try {
 
@@ -2461,6 +1629,7 @@ onSuccessedNativeAdvert = (form, xhr, resetHiddenField = false, isBindData = tru
         console.log(e)
     }
 }
+
 nativeAdvertPreviewSubmit = (element) => {
     var form = $(element).closest('form')
 
@@ -2475,8 +1644,6 @@ nativeAdvertPreviewSubmit = (element) => {
 
     return false
 }
-
-
 
 onBlockDataSortableSuccessed = (element, xhr) => {
     try {
@@ -2618,7 +1785,7 @@ onFavoriteFunctionSuccessed = (element, xhr) => {
     }
 }
 
-onBindDataSelectSuccessed = (element, xhr, isRelate = false) => {
+onBindDataSelectSuccessed = (element, xhr) => {
     try {
         //console.log(xhr)
         var resetElement = $(element).data('ajax-reset') || false;
@@ -2627,6 +1794,7 @@ onBindDataSelectSuccessed = (element, xhr, isRelate = false) => {
         if (resetElement) {
             resetForm($(element))
         }
+        console.log(xhr)
         if (xhr.responseText) {
 
             const response = $(xhr.responseText)
@@ -2634,10 +1802,6 @@ onBindDataSelectSuccessed = (element, xhr, isRelate = false) => {
             const isEmpty = response.filter('table').
                 find('.not-found').first().length > 0
 
-            if (isRelate) {
-                if (response.filter('tr.not-found').first().length > 0)
-                    toastMessage(false, "Không tìm thấy văn bản phù hợp");
-            }
             if (!isEmpty) {
 
                 if ($('#sticky-table-modal').length) {
@@ -2675,24 +1839,9 @@ onBindDataSelectSuccessed = (element, xhr, isRelate = false) => {
             }
 
         }
-        //dành riêng cho docRelate
-        if (isRelate) {
-            $("#tblDocSearch .not-found").remove();
-            var tableRows = $('#tblDocSearch tr');
-            if (tableRows.length > 0) {
-                tableRows.each(function (index) {
-                    console.log(index)
-                    $(this).find('.row-number').text(index + 1);
-                })
-            }
-            console.log(tableRows);
-        }
-        if (xhr.Messages) {
+        if (xhr) {
             toastMessage(xhr.Succeeded, xhr.Messages.join('<br />'))
         }
-        stickyHeaderTableInit()
-        stickyHeaderTableModalInit(modalDataPopup)
-
 
     } catch (e) {
         console.log(e)
@@ -2731,185 +1880,7 @@ onUploadSuccessed = (element, xhr) => {
         console.log(e)
     }
 }
-onUploadFileSuccessed = (element, xhr) => {
-    try {
-        removeLoading(element);
-        const btnUpFile = $('.btn-up-file');
-        if (btnUpFile.length) {
-            removeLoading(btnUpFile);
-        }
-        var btnUpFileTextbox = $('.btn-up-file-to-textbox');
-        if (btnUpFileTextbox.length) {
-            removeLoading(btnUpFileTextbox);
-        }
-        if (xhr.responseJSON.Messages) {
-            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
-        }
-        if (xhr.responseJSON.Data != null) {
-            for (var i = 0; i < xhr.responseJSON.Data.length; i++) {
-                let isExist = mediaSelected.filter(x => x.id && x.id == xhr.responseJSON.Data[i].id)
 
-                if (isExist.length == 0) {
-                    mediaSelected.push({
-                        id: xhr.responseJSON.Data[i].id,
-                        name: xhr.responseJSON.Data[i].name,
-                        path: xhr.responseJSON.Data[i].path
-                    })
-                }
-            }
-        }
-
-        const getBlockDataButton = $('.media-search').first()
-
-        if (getBlockDataButton) {
-            $(getBlockDataButton).trigger('click')
-        }
-        //refresh
-        var dataType, fileTypeId, dataId, elementResultId;
-        if ($('#fileUploadCreateCommand_DataType').length) {
-            dataType = $('#fileUploadCreateCommand_DataType').val();
-        }
-        if ($('#fileUploadCreateCommand_FileTypeId').length) {
-            fileTypeId = $('#fileUploadCreateCommand_FileTypeId').val();
-        }
-        if ($('#fileUploadCreateCommand_DataId').length) {
-            dataId = $('#fileUploadCreateCommand_DataId').val();
-        }
-        if ($('#fileUploadCreateCommand_ElementResultId').length) {
-            elementResultId = $('#fileUploadCreateCommand_ElementResultId').val();
-        }
-        if (dataType != undefined && fileTypeId != undefined && dataId != undefined) {
-            //Nếu là box uploadfile
-            removeLoading(element);
-            if (elementResultId != undefined && elementResultId.length && $('#' + elementResultId).length) {
-                var filePath = xhr.responseJSON.Data[0].FilePath;
-                $('#' + elementResultId).val(filePath);
-                if ($('#' + elementResultId + '_Preview').length) {
-                    $('#' + elementResultId + '_Preview').attr('src', filePath);
-                }
-            }
-            else //bảng danh sách file
-            {
-                var idTable = 'table_' + dataType + "_" + dataId;
-                var table = $('#' + idTable);
-                if (table.length) {
-                    var url = table.attr('data-ajax-url');
-                    if (url != null) {
-                        fetchData({
-                            type: 'GET',
-                            url: url,
-                            dataType: 'html'
-                        }).then(response => {
-                            $(table).html(response);
-                        })
-                    }
-                }
-            }
-        }
-
-    } catch (e) {
-        console.log(e)
-    }
-}
-onUploadDocumentSuccessed = (element, xhr) => {
-    try {
-        removeLoading(element);
-        const btnUpFile = $('.btn-up-document');
-        if (btnUpFile.length) {
-            removeLoading(btnUpFile);
-        }
-        var btnUpFileTextbox = $('.btn-up-file-to-textbox');
-        if (btnUpFileTextbox.length) {
-            removeLoading(btnUpFileTextbox);
-        }
-        if (xhr.responseJSON.Messages) {
-            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
-        }
-
-        if (xhr.responseJSON.Data != null) {
-            for (var i = 0; i < xhr.responseJSON.Data.length; i++) {
-                let isExist = mediaSelected.filter(x => x.id && x.id == xhr.responseJSON.Data[i].id)
-
-                if (isExist.length == 0) {
-                    mediaSelected.push({
-                        id: xhr.responseJSON.Data[i].id,
-                        name: xhr.responseJSON.Data[i].name,
-                        path: xhr.responseJSON.Data[i].path
-                    })
-                }
-            }
-        }
-
-        const getBlockDataButton = $('.media-search').first()
-
-        if (getBlockDataButton) {
-            $(getBlockDataButton).trigger('click')
-        }
-        //refresh
-        var DocumentTypeId, LawerId, FirmId, elementResultId;
-        if ($('#lawDocumentCreateCommand_DocumentTypeId').length) {
-            DocumentTypeId = $('#lawDocumentCreateCommand_DocumentTypeId').val();
-        }
-        if ($('#lawDocumentCreateCommand_LawerId').length) {
-            LawerId = $('#lawDocumentCreateCommand_LawerId').val();
-        }
-        if ($('#lawDocumentCreateCommand_FirmId').length) {
-            FirmId = $('#lawDocumentCreateCommand_FirmId').val();
-        }
-        if ($('#lawDocumentCreateCommand_ElementResultId').length) {
-            elementResultId = $('#lawDocumentCreateCommand_ElementResultId').val();
-        }
-        if (LawerId != undefined || FirmId != undefined) {
-            //Nếu là box uploadfile
-            removeLoading(element);
-            if (elementResultId != undefined && elementResultId.length && $('#' + elementResultId).length) {
-                var filePath = xhr.responseJSON.Data[0].FilePath;
-                $('#' + elementResultId).val(filePath);
-                if ($('#' + elementResultId + '_Preview').length) {
-                    $('#' + elementResultId + '_Preview').attr('src', filePath);
-                }
-            }
-            else //bảng danh sách file
-            {
-                if (FirmId) {
-                    var idTable = 'table_' + FirmId;
-                    var table = $('#' + idTable);
-                    if (table.length) {
-                        var url = table.attr('data-ajax-url');
-                        if (url != null) {
-                            fetchData({
-                                type: 'GET',
-                                url: url,
-                                dataType: 'html'
-                            }).then(response => {
-                                $(table).html(response);
-                            })
-                        }
-                    }
-                } else {
-                    var idTable = 'table_' + LawerId;
-                    var table = $('#' + idTable);
-                    if (table.length) {
-                        var url = table.attr('data-ajax-url');
-                        if (url != null) {
-                            fetchData({
-                                type: 'GET',
-                                url: url,
-                                dataType: 'html'
-                            }).then(response => {
-                                $(table).html(response);
-                            })
-                        }
-                    }
-                }
-
-            }
-        }
-
-    } catch (e) {
-        console.log(e)
-    }
-}
 blockDataBinData = (urlRequest, element) => {
     fetchData({
         type: 'GET',
@@ -2954,8 +1925,25 @@ function debounce(func, delay = 500) {
     }
 }
 
+GetCategoryTreeview = (siteId, articleId) => {
+    if (siteId > 0) {
+        fetchData({
+            type: 'GET',
+            url: `/BongDa24hCMS/Categories?handler=CategoryTreeView`,
+            data: { siteId, articleId },
+            dataType: 'html'
+        }).then(response => {
+            $('#categoryTreeView').html(response)
+        })
+    }
+}
+
+normalizeText = text => {
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 flatpickrInit = (element) => {
-    element = element || '.datepicker';
+    element = element || '.datepicker'
     const format = $(element).data('format') || 'd-m-Y';
     if (typeof $.fn.flatpickr !== 'undefined') {
         $(element).flatpickr({
@@ -2970,63 +1958,143 @@ flatpickrInit = (element) => {
 }
 
 flatpickrTimeInit = (element) => {
-    element = element || '.datepicker-time';
+    element = element || '.datepicker-time',
 
-    $(element).each((index, item) => {
-        const format = $(item).data('format') || 'd/m/Y H:i',
-            enableSeconds = $(item).data('enable-seconds') || false,
-            nocalendar = $(item).data('nocalendar') || false,
-            time24h = $(item).data('time-24h') || false;
-        if (typeof $.fn.flatpickr !== 'undefined') {
-            $(item).flatpickr({
-                dateFormat: format,
-                enableTime: true,
-                enableSeconds: enableSeconds,
-                allowInput: true,
-                disableMobile: true,
-                time_24hr: time24h,
-                noCalendar: nocalendar,
-                'locale': 'vn'
-            });
+        $(element).each((index, item) => {
+            const format = $(item).data('format') || 'd-m-Y H:i',
+                enableSeconds = $(item).data('enable-seconds') || false
+
+            if (typeof $.fn.flatpickr !== 'undefined') {
+                $(item).flatpickr({
+                    dateFormat: format,
+                    enableTime: true,
+                    enableSeconds: enableSeconds,
+                    allowInput: true,
+                    disableMobile: true,
+                    'locale': 'vn'
+                });
+            }
+        })
+}
+
+sortableBlock = element => {
+    var arraySortable = new Array(), pos = $(element).data('pos') || 'y'
+    $(element).sortable({
+        axis: pos,
+        opacity: 0.6,
+        cursor: 'move',
+        scrollSensitivity: 40,
+        update: function (event, ui) {
+            if (!confirm('Xác nhận thay đổi vị trí Block ?')) {
+                event.preventDefault()
+                return
+            }
+
+            let _this = $(this), urlRequest = _this.data('url')
+
+            arraySortable = []
+
+            $.map(_this.find('.sortable-item'), function (el) {
+                arraySortable.push({
+                    id: parseInt(el.id), displayOrder: parseInt($(el).index() + 1)
+                })
+            })
+
+            fetchData({
+                type: 'POST',
+                url: urlRequest,
+                dataType: 'json',
+                data: { commands: arraySortable, pageId: $('#Query_UiPageId option:selected').val() },
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                }
+            }).then(response => {
+                if (response.Messages) {
+                    toastMessage(response.Succeeded, response.Messages.join('<br />'))
+                }
+            })
         }
     })
 }
-sortableBlock = element => {
+
+sortableBlockTab = element => {
     var arraySortable = new Array()
     $(element).sortable({
+        axis: 'x',
+        opacity: 0.6,
+        cursor: 'move',
+        scrollSensitivity: 40,
+        update: function (event, ui) {
+            if (!confirm('Xác nhận thay đổi vị trí Tab ?')) {
+                event.preventDefault()
+                return
+            }
+
+            let _this = $(this), urlRequest = _this.data('url')
+
+            arraySortable = []
+
+            $.map(_this.find('.sortable-item'), function (el) {
+                arraySortable.push({
+                    id: parseInt(el.id), displayOrder: parseInt($(el).index() + 1)
+                })
+            })
+
+            fetchData({
+                type: 'POST',
+                url: urlRequest,
+                dataType: 'json',
+                data: { commands: arraySortable },
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                }
+            }).then(response => {
+                if (response.Messages) {
+                    toastMessage(response.Succeeded, response.Messages.join('<br />'))
+                }
+            })
+        }
+    })
+}
+
+sortableBlockTabDownload = () => {
+    var arraySortable = new Array()
+    $('.block-tabs-download').sortable({
         axis: 'y',
         opacity: 0.6,
         cursor: 'move',
         scrollSensitivity: 40,
         update: function (event, ui) {
-            if (!confirm('Xác nhận thay đổi vị trí ?')) {
-                event.preventDefault();
+            if (!confirm('Xác nhận thay đổi vị trí Section tải danh sách VB ?')) {
+                event.preventDefault()
+                return
             }
-            else {
-                arraySortable = []
 
-                $.map($(this).find('.sortable-item'), function (el) {
-                    arraySortable.push({
-                        id: el.id, displayOrder: parseInt($(el).index() + 1)
-                    })
-                });
+            let _this = $(this), urlRequest = _this.data('url')
 
-                fetchData({
-                    url: $(this).data('url'),
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
-                    },
-                    type: 'post',
-                    dataType: 'json',
-                    data: { commands: arraySortable, pageId: $('#Query_UiPageId option:selected').val() },
-                }).then(response => {
-                    if (response.Messages) {
-                        toastMessage(response.Succeeded, response.Messages.join('<br />'))
-                    }
+            arraySortable = []
+
+            $.map(_this.find('.sortable-item'), function (el) {
+                arraySortable.push({
+                    id: parseInt(el.id), displayOrder: parseInt($(el).index() + 1)
                 })
-            }
+            })
+
+            fetchData({
+                type: 'POST',
+                url: urlRequest,
+                dataType: 'json',
+                data: { commands: arraySortable },
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                }
+            }).then(response => {
+                if (response.Messages) {
+                    toastMessage(response.Succeeded, response.Messages.join('<br />'))
+                }
+            })
         }
-    });
+    })
 }
 
 sortableBlockData = element => {
@@ -3139,6 +2207,7 @@ modalSetSize = (element, modal) => {
             .removeClass('modal-lg')
             .removeClass('modal-xl')
             .removeClass('modal-xlg')
+            .removeClass('modal-xxlg')
             .removeClass('modal-fullscreen')
             .addClass(modalSize)
     }
@@ -3218,7 +2287,8 @@ bindData = (id, element) => {
 
     const url = new URL(window.location.href),
         path = url.pathname,
-        bindDataParamsElement = $('.bulk-select-replace-element')
+        bindDataParamsElement = $('.bulk-select-replace-element'),
+        { callbacks } = $(element).get(0).dataset
 
     if (bindDataParamsElement) {
 
@@ -3254,18 +2324,28 @@ bindData = (id, element) => {
             find('.not-found').first().length > 0
 
         if (!isEmpty) {
-            stickyHeaderTableInit()
-            stickyHeaderTableModalInit()
+
 
             if (id.length > 0) {
                 hightLightRow(id, element)
             }
 
             initTooltip()
-            initCkEditorInline()
+
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
+            }
+            stickyHeaderTableInit()
         }
     })
 }
+
 advertBindData = (id, element, url, query) => {
     element = element || $('.update-model .update-data')
     var keyworks = $('#select-keyworks').val();
@@ -3284,6 +2364,7 @@ advertBindData = (id, element, url, query) => {
         }
     })
 }
+
 getadvertBindData = (element, url) => {
     element = element || $('.update-model .update-data')
 
@@ -3299,15 +2380,13 @@ getadvertBindData = (element, url) => {
 
     })
 }
-modalGet = (element, path, title, callback) => {
+
+modalGet = (element, path, title) => {
     modalSetSize(element)
+    const { modalSize, callbacks, refresh } = element.dataset;
     let timeout
     elementAction = element
     const elementHtml = $(element).html()
-    const autoClose = $(element).data('auto-close') !== false
-
-    modalPopup.attr('data-auto-close', autoClose)
-
     debounce(
         fetchData({
             url: path,
@@ -3335,7 +2414,15 @@ modalGet = (element, path, title, callback) => {
             if (!modalPopupContent.hasClass('fs-0')) {
                 modalPopupContent.addClass('fs-0')
             }
-
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
+            }
             $.validator.unobtrusive.parse(modalPopup.find('form').first())
 
             if (modalPopupContent.find('input.datepicker').length > 0) {
@@ -3354,17 +2441,13 @@ modalGet = (element, path, title, callback) => {
                 docReady(scrollbarInit)
             }
 
-            if (modalPopupContent.find('[data-bs-content]').length > 0) {
-                docReady(popoverInit)
-            }
-
             const jsonViewElement = modalPopupContent.find('.json-view').first()
 
             if (jsonViewElement.length > 0) {
                 modalPopup.find('.modal-body').first().jsonView(jsonViewElement.text())
             }
 
-            docReady(tooltipInit)
+            docReady(tooltipInit);
 
             initViewMaxLength()
 
@@ -3375,98 +2458,18 @@ modalGet = (element, path, title, callback) => {
             initAutocomplete()
 
             initTooltip()
-
-            initTooltipDocProperties()
-
-            initTooltipDocProperties2()
-
-            select2Init()
-            if (modalPopupContent.find('.smart-select').length > 0) {
-                modalPopupContent.find('.smart-select').each(function () {
-                    const container = $(this);
-                    if (container) {
-                        initSelectBox(container);
-                    }
-                });
-            }
-
-            stickyHeaderTableModalInit(modalPopup)
-
-            $('#tooltip-doc-props').hide()
-
+            removeLoading(elementAction)
             modalPopup.modal('show')
-
-            if ($("#Command_LawJudgTypeId")) {
-                var lawJudgType = $("#Command_LawJudgTypeId").val()
-                if (parseInt(lawJudgType) == 3) {
-                    $(".is-ban-an").hide()
-                    $(".is-an-le").show()
-                }
-                else {
-                    $(".is-ban-an").show()
-                    $(".is-an-le").hide()
-                    if (parseInt(lawJudgType) == 1) {
-
-                        $(".is-quyet-dinh").hide()
-                    }
-                    else {
-                        $(".is-quyet-dinh").show()
-                    }
-
-                }
-            }
-
-            if (callback && typeof callback === 'function') {
-                callback()
-            }
-
         }), 1000
     )
-
 }
 
-modalLoad = (element) => {
-    const self = $(element),
-        { title, className } = element,
-        { modalSize, path, callbacks, refresh, closeCurrent } = element.dataset,
-        modalId = (Math.random() + 1).toString(36).substring(2);
-
+modalChildGet = (element, path, title) => {
+    modalSetSize(element, $('#modalDataPopup'))
     let timeout
     elementAction = element
-    const elementHtml = $(element).html(), parent = self.closest('.modal'), parentId = parent.attr('id');
-    if (closeCurrent === 'true' && parent.length > 0) {
-        // 🔒 Gắn 1 flag để đảm bảo modalLoad sẽ được gọi lại sau khi đóng
-        element.dataset.closeCurrent = 'false'; // Đặt lại để không lặp vô hạn
-
-        // 👉 Đóng modal hiện tại
-        parent.on('hidden.bs.modal', function () {
-            $(this).remove();
-            modalLoad(element);
-        });
-
-        parent.modal('hide');
-        return;
-    }
-
-    $("body").append(`<div id="modalDataPopup_${modalId}" class="modal fade" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-3" style="z-index:1051" ${(refresh ? `data-path="${path}"` : '')} ${(refresh && parentId ? `data-pid="${parentId}"` : '')} ${(callbacks ? `data-callbacks='${callbacks}'` : '')}>
-        <div class="modal-dialog ${modalSize}">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Chọn dữ liệu</h5>
-                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                </div>
-                <div class="modal-body modal-dialog-scrollable mt-0">
-                    <div class="card-body">
-                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
-                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>`)
-
-    let modalDataLoad = $(`#modalDataPopup_${modalId}`)
-
+    const elementHtml = $(element).html();
+    console.log(1, elementAction)
     debounce(
         fetchData({
             url: path,
@@ -3487,276 +2490,67 @@ modalLoad = (element) => {
                 }, 300)
             }
         }).then(response => {
-            let modalDataLoadContent = modalDataLoad.find('.modal-content').first(),
-                modalDataLoadTitle = modalDataLoad.find('.modal-title').first()
+            modalDataPopupContent.html(response)
 
-            modalDataLoadContent.html(response)
+            const isEmpty = $(response).filter('table').
+                find('.not-found').first().length > 0
 
-            modalDataLoadTitle.text(title)
-
-            if (!modalDataLoadContent.hasClass('fs-0')) {
-                modalDataLoadContent.addClass('fs-0')
+            if (!isEmpty) {
+                if ($('#sticky-table-modal').length) {
+                    $('#sticky-table-modal').bootstrapTable({
+                        stickyHeader: true,
+                        stickyHeaderOffsetY: stickyHeaderOffsetY
+                    })
+                }
             }
 
-            $.validator.unobtrusive.parse(modalDataLoad.find('form').first())
+            modalDataPopup.find('.modal-title').first().text(title)
 
-            if (modalDataLoadContent.find('.scrollbar-overlay').length > 0) {
+            $.validator.unobtrusive.parse(modalDataPopup.find('form').first())
+
+
+            if (!modalDataPopupContent.hasClass('fs-0')) {
+                modalDataPopupContent.addClass('fs-0')
+            }
+            if (modalDataPopupContent.find('input.datepicker').length > 0) {
+                flatpickrInit()
+            }
+
+            if (modalDataPopupContent.find('input.datepicker-time').length > 0) {
+                flatpickrTimeInit()
+            }
+            if (modalDataPopupContent.find('input.datepicker-time2').length > 0) {
+                flatpickrTime2Init()
+            }
+            if (modalDataPopupContent.find('.select-picker-modal2').length > 0) {
+                docReady(select3Init($('#modalDataPopup')))
+            }
+            if (modalDataPopupContent.find('.scrollbar-overlay').length > 0) {
                 docReady(scrollbarInit)
             }
 
-            if (modalDataLoadContent.find('[data-bs-content]').length > 0) {
-                docReady(popoverInit)
-            }
+            const jsonViewElement = modalDataPopupContent.find('.json-view').first()
 
-            if (callbacks) {
-                const callbackObjects = JSON.parse(callbacks)
-                callbackObjects.forEach(callbackObj => {
-                    const callback = window[callbackObj.name]
-                    if (typeof callback === 'function') {
-                        callback(...callbackObj.params)
-                    }
-                })
+            if (jsonViewElement.length > 0) {
+                modalDataPopup.find('.modal-body').first().jsonView(jsonViewElement.text())
             }
 
             docReady(tooltipInit);
 
-            initCkEditor()
-            initSelect2AutoComplete($('select2-auto-complete-modal'))
             initViewMaxLength()
 
-            if (modalDataLoadContent.find('.select-picker-modal').length > 0) {
-                docReady(select2Init(modalDataLoad))
-            }
+            initCkEditor()
 
-            modalDataLoad.modal('show')
-        }), 1000
-    )
+            initSelect2AutoComplete($('.select3-auto-complete-modal'))
 
-    modalDataLoad.on('hidden.bs.modal', function () {
-        if (currentAbortController) {
-            currentAbortController.abort();
-            currentAbortController = null;
-            console.log('⛔ Stream bị hủy do đóng modal.');
-        }
-        $(this).remove()
-    })
-}
+            initAutocomplete()
 
-refreshModal = (modalId) => {
-    const element = document.getElementById(modalId),
-        modalDataPopup = $(element),
-        { title, path, callbacks, refresh } = element.dataset
-    if (path) {
-        debounce(
-            fetchData({
-                url: path,
-                type: 'GET',
-                dataType: 'html'
-            }).then(response => {
-                let modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
-                    modalDataPopupTitle = modalDataPopup.find('.modal-title').first()
-
-                modalDataPopupContent.html(response)
-
-                modalDataPopupTitle.text(title)
-
-                if (!modalDataPopupContent.hasClass('fs-0')) {
-                    modalDataPopupContent.addClass('fs-0')
-                }
-
-                $.validator.unobtrusive.parse($(modalDataPopup).find('form').first())
-
-                if (modalDataPopupContent.find('.scrollbar-overlay').length > 0) {
-                    docReady(scrollbarInit)
-                }
-
-                if (modalDataPopupContent.find('[data-bs-content]').length > 0) {
-                    docReady(popoverInit)
-                }
-
-                if (callbacks) {
-                    const callbackObjects = JSON.parse(callbacks)
-                    callbackObjects.forEach(callbackObj => {
-                        const callback = window[callbackObj.name]
-                        if (typeof callback === 'function') {
-                            callback(...callbackObj.params)
-                        }
-                    })
-                }
-
-                initCkEditor()
-            }), 1000
-        )
-
-        modalDataPopup.on('hidden.bs.modal', function () {
-            $(this).remove()
+            initTooltip()
+            removeLoading(elementAction)
+            modalDataPopup.modal('show')
         })
-    }
+    )
 }
-
-updateDocSummaryLayout = (docId, languageId) => {
-    const docContentCol = $('#doc-content-col');
-    const toggleLink = $('#toggle-doc-content');
-    //const contentCols = $('.content-col');
-    const rowParent = toggleLink.parent().closest('.row');
-    const contentCols = rowParent.find('.content-col');
-    const newsContentCol = $('#news-root-content-col');
-
-    const isVisible = docContentCol.hasClass('d-none');
-
-    const isDocStreamLoaded = docContentCol.data('doc-loaded') === true;
-
-    if (isVisible && !isDocStreamLoaded) {
-        loadDocStream(docId, languageId);
-        docContentCol.data('doc-loaded', true);
-    }
-
-    if (isVisible) {
-        toggleLink.text('Ẩn nội dung văn bản');
-        docContentCol.removeClass('d-none').addClass('col-md-4');
-        contentCols.removeClass('col-md-6').addClass('col-md-4');
-    } else {
-        toggleLink.text('Hiển thị nội dung văn bản');
-        docContentCol.addClass('d-none').removeClass('col-md-4');
-
-        if (newsContentCol.length && newsContentCol.hasClass('d-none')) {
-            contentCols.removeClass('col-md-4').addClass('col-md-6');
-        }
-    }
-}
-
-let blinkInterval = null;
-let dotAnimationInterval = null;
-
-const setDocStreamStatus = (status, type = 'info', autoClear = false, autoClearMs = 3000) => {
-    const label = document.querySelector('.doc-stream-label');
-    if (!label) return;
-
-    if (blinkInterval) {
-        clearInterval(blinkInterval);
-        blinkInterval = null;
-        label.classList.remove('blink');
-    }
-
-    if (dotAnimationInterval) {
-        clearInterval(dotAnimationInterval);
-        dotAnimationInterval = null;
-    }
-
-    const icons = {
-        info: '⏳',
-        inprocess: '🔄',
-        success: '✅',
-        error: '🚫',
-        warning: '⚠️',
-    };
-
-    const colors = {
-        info: 'text-muted',
-        inprocess: 'text-primary',
-        success: 'text-success',
-        error: 'text-danger',
-        warning: 'text-warning',
-    };
-
-    label.classList.remove('fade-out');
-
-    label.className = 'doc-stream-label small';
-    label.classList.add(colors[type]);
-
-    const baseText = `${icons[type]} ${status}`;
-
-    if (type === 'inprocess') {
-        label.innerHTML = `${baseText}<span class="dot-loader"></span>`;
-        const dotSpan = label.querySelector('.dot-loader');
-
-        let dotCount = 0;
-        const dotStates = ['', '.', '..', '...'];
-
-        dotAnimationInterval = setInterval(() => {
-            dotSpan.textContent = dotStates[dotCount];
-            dotCount = (dotCount + 1) % dotStates.length;
-        }, 500);
-    } else {
-        label.innerText = baseText;
-    }
-
-    if (autoClear) {
-
-        blinkInterval = setInterval(() => {
-            label.classList.toggle('blink');
-        }, 500);
-
-        setTimeout(() => {
-            clearInterval(blinkInterval);
-            blinkInterval = null;
-            label.classList.remove('blink');
-            label.innerText = '';
-        }, autoClearMs);
-    }
-}
-
-loadDocStream = async (docId, languageId) => {
-    const container = document.getElementById('doc-stream-container');
-
-    try {
-        // Nếu có một yêu cầu trước đó, hủy nó
-        if (currentAbortController) {
-            currentAbortController.abort();
-        }
-
-        // Tạo mới AbortController
-        currentAbortController = new AbortController();
-        const signal = currentAbortController.signal;
-
-        if (container) container.innerHTML = '';
-
-        setDocStreamStatus('Đang stream nội dung văn bản', 'inprocess');
-
-        // Gọi API để stream dữ liệu
-        const response = await fetch(`/LuatVietNamDoc/Docs?handler=StreamDocument&docId=${docId}&languageId=${languageId}`, { signal });
-
-        if (!response.ok || !response.body) {
-
-            setDocStreamStatus('Không thể tải dữ liệu stream từ máy chủ.', 'error');
-
-            return;
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) {
-                // Decode phần còn lại nếu có
-                const chunkLeft = decoder.decode();
-                if (chunkLeft) {
-                    container.insertAdjacentHTML('beforeend', chunkLeft);
-                }
-                break;
-            }
-
-            const chunk = decoder.decode(value, { stream: true });
-
-            container.insertAdjacentHTML('beforeend', chunk);
-        }
-
-        setDocStreamStatus('Tải xong nội dung văn bản', 'success', 5000);
-
-        console.log('✅ Stream nội dung văn bản đã hoàn tất!');
-
-    } catch (error) {
-
-        if (error.name === 'AbortError') {
-            setDocStreamStatus('Đã hủy stream', 'warning');
-        } else {
-            setDocStreamStatus('Lỗi khi stream nội dung ăn bản', 'error');
-            console.error('❌ Lỗi khi stream nội dung ăn bản:', error);
-        }
-    }
-}
-
 modalGetOnText = (element, path, title) => {
     modalSetSize(element)
     let timeout
@@ -3830,12 +2624,32 @@ modalGetOnText = (element, path, title) => {
         }), 1000
     )
 }
-modalChildGet = (element, path, title) => {
-    modalSetSize(element, $('#modalDataPopup'))
+modalLoad = (element) => {
+    const self = $(element), { title, className } = element,
+        { modalSize, path, callbacks, refresh } = element.dataset,
+        modalId = (Math.random() + 1).toString(36).substring(2)
+
     let timeout
     elementAction = element
-    const elementHtml = $(element).html();
+    const elementHtml = $(element).html(), parent = self.closest('.modal'), parentId = parent.attr('id')
+    $("body").append(`<div id="modalDataPopup_${modalId}" class="modal fade" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-3" aria-hidden="true" style="z-index:10011" ${(!refresh ? `data-path="${path}"` : '')} ${(refresh && parentId ? `data-pid="${parentId}"` : '')} ${(callbacks ? `data-callbacks='${callbacks}'` : '')}>
+        <div class="modal-dialog ${modalSize}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chọn dữ liệu</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body modal-dialog-scrollable mt-0">
+                    <div class="card-body">
+                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
+                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`)
 
+    let modalDataPopup = $(`#modalDataPopup_${modalId}`)
 
     debounce(
         fetchData({
@@ -3857,68 +2671,87 @@ modalChildGet = (element, path, title) => {
                 }, 300)
             }
         }).then(response => {
+            let modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
+                modalDataPopupTitle = modalDataPopup.find('.modal-title').first()
+
             modalDataPopupContent.html(response)
 
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
-
-            if (!isEmpty) {
-                stickyHeaderTableModalInit(modalDataPopup)
-            }
-
-            modalDataPopup.find('.modal-title').first().text(title)
-
-            $.validator.unobtrusive.parse(modalDataPopup.find('form').first())
-
+            modalDataPopupTitle.text(title)
 
             if (!modalDataPopupContent.hasClass('fs-0')) {
                 modalDataPopupContent.addClass('fs-0')
             }
-            if (modalDataPopupContent.find('input.datepicker').length > 0) {
-                flatpickrInit()
-            }
 
-            if (modalDataPopupContent.find('input.datepicker-time').length > 0) {
-                flatpickrTimeInit()
-            }
-            if (modalDataPopupContent.find('input.datepicker-time2').length > 0) {
-                flatpickrTime2Init()
-            }
-            if (modalDataPopupContent.find('.select-picker-modal2').length > 0) {
-                docReady(select3Init($('#modalDataPopup')))
-            }
+            $.validator.unobtrusive.parse(modalDataPopup.find('form').first())
+
             if (modalDataPopupContent.find('.scrollbar-overlay').length > 0) {
                 docReady(scrollbarInit)
             }
 
-            const jsonViewElement = modalDataPopupContent.find('.json-view').first()
-
-            if (jsonViewElement.length > 0) {
-                modalDataPopup.find('.modal-body').first().jsonView(jsonViewElement.text())
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
             }
-            stickyHeaderTableModalInit(modalDataPopup)
             docReady(tooltipInit);
+            initCkEditor()
 
             initViewMaxLength()
 
-            initCkEditor()
-
-            initSelect2AutoComplete($('.select3-auto-complete-modal'))
-
-            initAutocomplete()
-
-            initTooltip()
+            if (modalDataPopupContent.find('.select-picker-modal').length > 0) {
+                docReady(select2Init(modalDataPopup))
+            }
 
             modalDataPopup.modal('show')
-        })
+        }), 1000
     )
+
+    modalDataPopup.on('hidden.bs.modal', function () {
+        $(this).remove()
+    })
 }
-modalChild2Get = (element, path, title) => {
-    modalSetSize(element, $('#modalData2Popup'))
+genModalPopup = ({ modalId, modalSize, title, parentId, path, callbacks, refresh }) => {
+    $("body").append(`<div id="modalDataPopup_${modalId}" class="modal fade" data-bs-focus="false" data-bs-backdrop="static" data-keyboard="false" tabindex="-3" aria-hidden="true" style="z-index:10011" ${(!refresh ? `data-path="${path}"` : '')} ${(refresh && parentId ? `data-pid="${parentId}"` : '')} ${(callbacks ? `data-callbacks='${callbacks}'` : '')}>
+        <div class="modal-dialog ${modalSize}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title}</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body modal-dialog-scrollable mt-0">
+                    <div class="card-body">
+                        <h5 class="card-title placeholder-glow"><span class="placeholder col-6"></span></h5>
+                        <p class="card-text placeholder-glow"><span class="placeholder col-7"></span><span class="placeholder col-4"></span><span class="placeholder col-4"></span><span class="placeholder col-6"></span><span class="placeholder col-8"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`)
+}
+modalMediaLoad = (element) => {
+    const self = $(element), { title, className } = element,
+        { modalSize, callbacks, refresh, siteid, mediatypeid, key } = element.dataset,
+        modalId = (Math.random() + 1).toString(36).substring(2),
+        mediaTypeParam = `?Query.SiteId=${siteid}&Query.MediaTypeId=${mediatypeid}&modalId=${modalId}`,
+        path = `/BongDa24hCMS/Medias/Select${mediaTypeParam}`
+
     let timeout
     elementAction = element
-    const elementHtml = $(element).html();
+    const elementHtml = $(element).html(), parent = self.closest('.modal'), parentId = parent.attr('id')
 
+    genModalPopup({
+        modalId, modalSize, title: 'Chọn Media', path
+    })
+
+    let modalDataPopup = $(`#modalDataPopup_${modalId}`)
+
+    modalDataPopup.attr('data-key', key)
+
+    modalDataPopup.attr('data-type', mediatypeid)
 
     debounce(
         fetchData({
@@ -3940,88 +2773,162 @@ modalChild2Get = (element, path, title) => {
                 }, 300)
             }
         }).then(response => {
-            modalData2PopupContent.html(response)
+            let modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
+                modalDataPopupTitle = modalDataPopup.find('.modal-title').first()
 
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
+            modalDataPopupContent.html(response)
 
-            if (!isEmpty) {
-                stickyHeaderTableModalInit(modalData2Popup)
+            modalDataPopupTitle.text(title)
+
+            if (!modalDataPopupContent.hasClass('fs-0')) {
+                modalDataPopupContent.addClass('fs-0')
             }
 
-            modalData2Popup.find('.modal-title').first().text(title)
-
-            $.validator.unobtrusive.parse(modalData2Popup.find('form').first())
-
-
-            if (!modalData2PopupContent.hasClass('fs-0')) {
-                modalData2PopupContent.addClass('fs-0')
-            }
-            if (modalData2PopupContent.find('input.datepicker').length > 0) {
-                flatpickrInit()
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
             }
 
-            if (modalData2PopupContent.find('input.datepicker-time').length > 0) {
-                flatpickrTimeInit()
+            modalDataPopup.modal('show')
+        }), 1000
+    )
+
+    modalDataPopup.on('hidden.bs.modal', function () {
+        $(this).remove()
+    })
+}
+
+modalMediaGet = (element, key, mediaTypeId = 1, title = 'Chọn ảnh', siteid) => {
+    modalSetSize(element)
+    let timeout
+    elementAction = element, { siteid } = element.dataset
+    const elementHtml = $(element).html(),
+        mediaTypeParam = `?Query.SiteId=${siteid}&Query.MediaTypeId=${mediaTypeId}`,
+        path = `/BongDa24hCMS/Medias/Select${mediaTypeParam}`
+
+    let modalDataPopup = $(`#modalDataPopup_${key}`)
+
+    debounce(
+        fetchData({
+            url: path,
+            type: 'GET',
+            dataType: 'html',
+            beforeSend: () => {
+                onBegin(element)
+            },
+            callback: () => {
+                if (timeout) {
+                    clearTimeout(timeout)
+                }
+
+                timeout = setTimeout(() => {
+                    $(element).removeAttr('disabled')
+                    $(element).html(elementHtml)
+                    timeout = null
+                }, 300)
             }
-            if (modalData2PopupContent.find('input.datepicker-time2').length > 0) {
-                flatpickrTime2Init()
+        }).then(response => {
+            let modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
+                modalDataPopupTitle = modalDataPopup.find('.modal-title').first()
+
+            modalDataPopupContent.html(response)
+
+            modalDataPopupTitle.text(title)
+
+            if (!modalDataPopupContent.hasClass('fs-0')) {
+                modalDataPopupContent.addClass('fs-0')
             }
-            if (modalData2PopupContent.find('.select-picker-modal2').length > 0) {
-                docReady(select3Init($('#modalData2Popup')))
-            }
-            if (modalData2PopupContent.find('.scrollbar-overlay').length > 0) {
+
+            $.validator.unobtrusive.parse(modalDataPopup.find('form').first())
+
+            if (modalDataPopupContent.find('.scrollbar-overlay').length > 0) {
                 docReady(scrollbarInit)
             }
 
-            const jsonViewElement = modalData2PopupContent.find('.json-view').first()
-
-            if (jsonViewElement.length > 0) {
-                modalData2Popup.find('.modal-body').first().jsonView(jsonViewElement.text())
+            if (callbacks) {
+                const callbackObjects = JSON.parse(callbacks)
+                callbackObjects.forEach(callbackObj => {
+                    const callback = window[callbackObj.name]
+                    if (typeof callback === 'function') {
+                        callback(...callbackObj.params)
+                    }
+                })
             }
 
-            docReady(tooltipInit);
-
-            initViewMaxLength()
-            if ($('.ckeditor-input-modal').length > 0) {
-                initCkEditor($('.ckeditor-input-modal'))
-            }
-            if ($('.ckeditor-input').length > 0) {
-                initCkEditor($('.ckeditor-input'))
-            }
-            initSelect2AutoComplete($('.select3-auto-complete-modal'))
-
-            initAutocomplete()
-
-            initTooltip()
-
-            modalData2Popup.modal('show')
-        })
+            modalDataPopup.modal('show')
+        }), 1000
     )
+
+    modalDataPopup.on('hidden.bs.modal', function () {
+        $(this).remove()
+    })
 }
-selectVOHVoice = (element) => {
-    const profileSelected = $('#Command_HostVoices option:selected'),
-        profileId = profileSelected.val() || 0
-    //voicTypeSelected = $('#VOHVoiceType option:selected'),
-    //voiceTypeId = voicTypeSelected.val() || 0
+refreshModal = (modalId) => {
+    const element = document.getElementById(modalId), modalDataPopup = $(element),
+        { title, path, callbacks, refresh } = element.dataset
 
-    //if (voiceTypeId <= 0) {
+    if (path) {
+        debounce(
+            fetchData({
+                url: path,
+                type: 'GET',
+                dataType: 'html',
+                //beforeSend: () => {
+                //    onBegin(element)
+                //},
+                //callback: () => {
+                //    if (timeout) {
+                //        clearTimeout(timeout)
+                //    }
 
-    //    showMessage({ message : 'Chưa chọn giọng đọc.' })
+                //    timeout = setTimeout(() => {
+                //        $(element).removeAttr('disabled')
+                //        $(element).html(elementHtml)
+                //        timeout = null
+                //    }, 300)
+                //}
+            }).then(response => {
+                let modalDataPopupContent = modalDataPopup.find('.modal-content').first(),
+                    modalDataPopupTitle = modalDataPopup.find('.modal-title').first()
 
-    //    return false
-    //}
+                modalDataPopupContent.html(response)
 
-    if (profileId <= 0) {
+                modalDataPopupTitle.text(title)
 
-        showMessage({ message: 'Vui lòng chọn biên tập viên.' })
+                if (!modalDataPopupContent.hasClass('fs-0')) {
+                    modalDataPopupContent.addClass('fs-0')
+                }
 
-        return false
+                $.validator.unobtrusive.parse($(modalDataPopup).find('form').first())
+
+                if (modalDataPopupContent.find('.scrollbar-overlay').length > 0) {
+                    docReady(scrollbarInit)
+                }
+
+                if (callbacks) {
+                    const callbackObjects = JSON.parse(callbacks)
+                    callbackObjects.forEach(callbackObj => {
+                        const callback = window[callbackObj.name]
+                        if (typeof callback === 'function') {
+                            callback(...callbackObj.params)
+                        }
+                    })
+                }
+
+                //modalDataPopup.modal('show')
+            }), 1000
+        )
+
+        modalDataPopup.on('hidden.bs.modal', function () {
+            $(this).remove()
+        })
     }
-
-    return true
 }
-
 showMessage = (object) => {
 
     let { title, message, icon, type, buttons, autoClose, escapeKey, columnClass } = object
@@ -4077,13 +2984,122 @@ showMessage = (object) => {
     $.confirm(setting)
 }
 
-modalMediaGet = (element, key, mediaTypeId = 1, title = 'Chọn ảnh') => {
+
+selectRow = table => {
+    let anyChecked = false, checkedIds = [], hiddenInput = table.find('input[name="ChkActionIds"]').first()
+    table.find('.row-checkbox').each(function () {
+        if ($(this).prop('checked')) {
+            anyChecked = true
+            checkedIds.push($(this).val())
+        }
+    })
+
+    hiddenInput.val(checkedIds.join(','))
+
+    let bulkActions = table.find('.bulk-select-actions').first()
+    if (anyChecked) {
+        bulkActions.removeClass('d-none')
+    } else {
+        bulkActions.addClass('d-none')
+    }
+
+    updateSelectAllCheckbox(table)
+}
+
+updateSelectAllCheckbox = table => {
+    let selectAllCheckbox = table.find('thead input[class*="form-check-input"]'), checkboxes = table.find('.row-checkbox'),
+        allChecked = true, anyChecked = false
+
+    checkboxes.each(function () {
+        if (!$(this).prop('checked')) {
+            allChecked = false
+        } else {
+            anyChecked = true
+        }
+    })
+    if (checkboxes.length == 0) {
+        allChecked = false
+    }
+    if (allChecked) {
+        selectAllCheckbox.prop('checked', true)
+        selectAllCheckbox.prop('indeterminate', false)
+    } else if (anyChecked) {
+        selectAllCheckbox.prop('checked', false)
+        selectAllCheckbox.prop('indeterminate', true)
+    } else {
+        selectAllCheckbox.prop('checked', false)
+        selectAllCheckbox.prop('indeterminate', false)
+    }
+}
+
+modalMediaEditorGet = (element, key, mediaTypeId = 1, title = 'Chọn ảnh') => {
     modalSetSize(element)
     let timeout
     elementAction = element
     const elementHtml = $(element).html(),
         mediaTypeParam = `?Query.MediaTypeId=${mediaTypeId}`,
-        path = `/LuatVietNamCms/Medias/Select${mediaTypeParam}`
+        path = `/BongDa24hCMS/Medias/SelectEditor${mediaTypeParam}`
+
+    modalDataChildPopup.removeAttr('data-key')
+    modalDataChildPopup.removeAttr('data-type')
+
+    debounce(
+        fetchData({
+            url: path,
+            type: 'GET',
+            dataType: 'html',
+            beforeSend: () => {
+                onBegin(element)
+            },
+            callback: () => {
+                if (timeout) {
+                    clearTimeout(timeout)
+                }
+
+                timeout = setTimeout(() => {
+                    $(element).removeAttr('disabled')
+                    $(element).html(elementHtml)
+                    timeout = null
+                }, 300)
+            }
+        }).then(response => {
+
+            modalDataChildPopup.attr('data-key', key)
+
+            modalDataChildPopup.attr('data-type', mediaTypeId)
+
+            modalDataChildPopupContent.html(response)
+
+            const isEmpty = $(response).filter('table').
+                find('.not-found').first().length > 0
+
+            if (!isEmpty) {
+                if ($('#sticky-table-modal').length) {
+                    $('#sticky-table-modal').bootstrapTable({
+                        stickyHeader: true,
+                        stickyHeaderOffsetY: stickyHeaderOffsetY
+                    })
+                }
+            }
+
+            modalDataChildPopup.find('.modal-title').first().text(title)
+
+            if (!modalDataChildPopupContent.hasClass('fs-0')) {
+                modalDataChildPopupContent.addClass('fs-0')
+            }
+
+            modalDataChildPopup.modal('show')
+        })
+    )
+}
+
+modalMediaGet2 = (element, key, mediaTypeId = 1, title = 'Chọn ảnh', siteId) => {
+    modalSetSize(element)
+    let timeout
+    elementAction = element
+    const elementHtml = $(element).html(),
+        mediaTypeParam = `?Query.MediaTypeId=${mediaTypeId}&Query.SiteId=${siteId}`,
+        path = `/BongDa24hCMS/Medias/Select${mediaTypeParam}`
 
     modalDataPopup.removeAttr('data-key')
     modalDataPopup.removeAttr('data-type')
@@ -4119,8 +3135,12 @@ modalMediaGet = (element, key, mediaTypeId = 1, title = 'Chọn ảnh') => {
                 find('.not-found').first().length > 0
 
             if (!isEmpty) {
-                stickyHeaderTableModalInit(modalDataPopup)
-                $('#sticky-table-modal').bootstrapTable('resetView');
+                if ($('#sticky-table-modal').length) {
+                    $('#sticky-table-modal').bootstrapTable({
+                        stickyHeader: true,
+                        stickyHeaderOffsetY: stickyHeaderOffsetY
+                    })
+                }
             }
 
             modalDataPopup.find('.modal-title').first().text(title)
@@ -4134,310 +3154,6 @@ modalMediaGet = (element, key, mediaTypeId = 1, title = 'Chọn ảnh') => {
     )
 }
 
-modalMediaEditorGet = (editor, element) => {
-    let timeout
-    let key, mediaTypeId = 1, title = 'Chọn ảnh'
-    let elementId = $(`#${element.uiItems[0]._.id}`)
-    elementAction = $(elementId)
-    const elementHtml = $(elementId).html(),
-        mediaTypeParam = `?Query.MediaTypeId=${mediaTypeId}`,
-        path = `/ICAds/Medias/EditorSelect${mediaTypeParam}`
-
-    modalDataPopup.removeAttr('data-key')
-    modalDataPopup.removeAttr('data-type')
-
-    debounce(
-        fetchData({
-            url: path,
-            type: 'GET',
-            dataType: 'html',
-            beforeSend: () => {
-                onBegin(elementId)
-            },
-            callback: () => {
-                if (timeout) {
-                    clearTimeout(timeout)
-                }
-
-                timeout = setTimeout(() => {
-                    $(elementId).removeAttr('disabled')
-                    $(elementId).html(elementHtml)
-                    timeout = null
-                }, 300)
-            }
-        }).then(response => {
-
-            modalDataPopup.attr('data-key', key)
-
-            modalDataPopup.attr('data-type', mediaTypeId)
-
-            modalDataPopupContent.html(response)
-
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
-
-            if (!isEmpty) {
-                stickyHeaderTableModalInit(modalDataPopup)
-                $('#sticky-table-modal').bootstrapTable('resetView');
-            }
-
-            modalDataPopup.find('.modal-title').first().text(title)
-
-            if (!modalDataPopupContent.hasClass('fs-0')) {
-                modalDataPopupContent.addClass('fs-0')
-            }
-
-            modalDataPopup.modal('show')
-        })
-    )
-}
-
-modalNewsEditorGet = (editor, element, keywords = '', newsTypeId = 1, searchByDate = 1, title = "Chọn bài viết") => {
-    let timeout
-    let elementId = $(`#${element.uiItems[0]._.id}`)
-    elementAction = $(elementId)
-    const elementHtml = $(elementId).html(),
-        newsTypeParam = `?Query.NewType=${newsTypeId}&Query.Keywords=${keywords}&Query.SearchByDate=${searchByDate}`,
-        path = `/News/News/EditorSelect${newsTypeParam}`
-
-    modalDataPopup.removeAttr('data-key')
-    modalDataPopup.removeAttr('data-type')
-
-    debounce(
-        fetchData({
-            url: path,
-            type: 'GET',
-            dataType: 'html',
-            beforeSend: () => {
-                onBegin(elementId)
-            },
-            callback: () => {
-                if (timeout) {
-                    clearTimeout(timeout)
-                }
-
-                timeout = setTimeout(() => {
-                    $(elementId).removeAttr('disabled')
-                    $(elementId).html(elementHtml)
-                    timeout = null
-                }, 300)
-            }
-        }).then(response => {
-
-            modalDataPopupContent.html(response)
-
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
-
-            if (!isEmpty) {
-                if ($('#sticky-table-modal').length) {
-                    $('#sticky-table-modal').bootstrapTable({
-                        stickyHeader: true,
-                        stickyHeaderOffsetY: stickyHeaderOffsetY
-                    })
-                }
-
-                initTooltip(modalDataPopupContent)
-            }
-
-            var selectModal = modalDataPopupContent.find('.select-editor-modal')
-
-            selectModal.length && selectModal.each(function (index, value) {
-                var $this = $(value);
-                var options = $.extend({
-                    dropdownParent: $('#modalDataPopup'),
-                }, $this.data('options'))
-                $this.select2(options)
-            })
-
-            if (modalDataPopupContent.find('input.datepicker').length > 0) {
-                flatpickrInit()
-            }
-
-            modalDataPopup.find('.modal-title').first().text(title)
-
-            if (!modalDataPopupContent.hasClass('fs-0')) {
-                modalDataPopupContent.addClass('fs-0')
-            }
-
-
-            modalDataPopup.modal('show')
-        })
-    )
-}
-modalNewsGet = (element, key, keywords = '', newsTypeId = 1, title = "Chọn văn bản", searchByDate = 1) => {
-    element.attr('data-modal', 'modal-xl')
-    modalSetSize(element, $('#modalDataChildPopup'))
-    let timeout
-    elementAction = element
-    const elementHtml = $(element).html(),
-        path = `/LuatVietNamCMS/Articles/SelectArticles`
-
-    modalDataChildPopup.removeAttr('data-key')
-    modalDataChildPopup.removeAttr('data-type')
-
-    debounce(
-        fetchData({
-            url: path,
-            type: 'GET',
-            dataType: 'html',
-            beforeSend: () => {
-                onBegin(element)
-            },
-            callback: () => {
-                if (timeout) {
-                    clearTimeout(timeout)
-                }
-
-                timeout = setTimeout(() => {
-                    $(element).removeAttr('disabled')
-                    $(element).html(elementHtml)
-                    timeout = null
-                }, 300)
-            }
-        }).then(response => {
-
-            modalDataChildPopup.attr('data-key', key)
-
-            modalDataChildPopup.attr('data-type', newsTypeId)
-
-            modalDataChildPopupContent.html(response)
-
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
-
-            if (!isEmpty) {
-                if ($('#sticky-table-modal').length) {
-                    $('#sticky-table-modal').bootstrapTable({
-                        stickyHeader: true,
-                        stickyHeaderOffsetY: stickyHeaderOffsetY
-                    })
-                }
-
-                initTooltip(modalDataChildPopupContent)
-            }
-
-            var selectModal = modalDataChildPopupContent.find('.select-editor-modal')
-
-            selectModal.length && selectModal.each(function (index, value) {
-                var $this = $(value);
-                var options = $.extend({
-                    dropdownParent: $('#modalDataChildPopup'),
-                }, $this.data('options'))
-                $this.select2(options)
-            })
-
-            if (modalDataChildPopupContent.find('input.datepicker').length > 0) {
-                flatpickrInit()
-            }
-
-            modalDataChildPopup.find('.modal-title').first().text(title)
-
-            if (!modalDataChildPopupContent.hasClass('fs-0')) {
-                modalDataChildPopupContent.addClass('fs-0')
-            }
-
-
-            modalDataChildPopup.modal('show')
-        })
-    )
-}
-modalDocsGet = (element, key, keywords = '', newsTypeId = 1, title = "Chọn văn bản", searchByDate = 1) => {
-    element.attr('data-modal', 'modal-xl')
-    modalSetSize(element, $('#modalDataChildPopup'))
-    let timeout
-    elementAction = element
-    const elementHtml = $(element).html(),
-        path = `/LuatVietNamDoc/Docs/SelectDocs`
-
-    modalDataChildPopup.removeAttr('data-key')
-    modalDataChildPopup.removeAttr('data-type')
-
-    debounce(
-        fetchData({
-            url: path,
-            type: 'GET',
-            dataType: 'html',
-            beforeSend: () => {
-                onBegin(element)
-            },
-            callback: () => {
-                if (timeout) {
-                    clearTimeout(timeout)
-                }
-
-                timeout = setTimeout(() => {
-                    $(element).removeAttr('disabled')
-                    $(element).html(elementHtml)
-                    timeout = null
-                }, 300)
-            }
-        }).then(response => {
-
-            modalDataChildPopup.attr('data-key', key)
-
-            modalDataChildPopup.attr('data-type', newsTypeId)
-
-            modalDataChildPopupContent.html(response)
-
-            const isEmpty = $(response).filter('table').
-                find('.not-found').first().length > 0
-
-            if (!isEmpty) {
-                if ($('#sticky-table-modal').length) {
-                    $('#sticky-table-modal').bootstrapTable({
-                        stickyHeader: true,
-                        stickyHeaderOffsetY: stickyHeaderOffsetY
-                    })
-                }
-
-                initTooltip(modalDataChildPopupContent)
-            }
-
-            var selectModal = modalDataChildPopupContent.find('.select-editor-modal')
-
-            selectModal.length && selectModal.each(function (index, value) {
-                var $this = $(value);
-                var options = $.extend({
-                    dropdownParent: $('#modalDataChildPopup'),
-                }, $this.data('options'))
-                $this.select2(options)
-            })
-
-            if (modalDataChildPopupContent.find('input.datepicker').length > 0) {
-                flatpickrInit()
-            }
-
-            modalDataChildPopup.find('.modal-title').first().text(title)
-
-            if (!modalDataChildPopupContent.hasClass('fs-0')) {
-                modalDataChildPopupContent.addClass('fs-0')
-            }
-
-
-            modalDataChildPopup.modal('show')
-        })
-    )
-}
-
-selectChildData = (element, path, title = '') => {
-    if (typeof path == 'undefined' || path.trim().length <= 0) {
-        return;
-    }
-
-    modalDataChildPopup.modal('hide')
-
-    let dataKey = modalDataChildPopup.attr('data-key') || ''
-
-    if (dataKey.trim().length > 0) {
-
-        if (dataKey.includes('key_cke_')) {
-            $(`.${dataKey}`).find('input').val(path)
-            $($(`.${dataKey}`).find('input')[0]).focus()
-            $(`.${dataKey}.alternative-information`).find('input').val(title)
-        }
-    }
-}
 uncheckRadio = (element, mediaKey) => {
     modalDataPopup.attr('data-key', mediaKey)
 
@@ -4646,7 +3362,7 @@ getMediaType = (mediaTypeId = 1, getProp = 'name') => {
     return ''
 }
 
-selectMedia = async (element, mediaType = 1, mediaPath, duration = null, fileSize = 0, mediaName = '') => {
+selectMedia2 = async (element, mediaType = 1, mediaPath, fileSize = 0, mediaName = '') => {
     if (typeof mediaPath == 'undefined' || mediaPath.trim().length <= 0) {
         return;
     }
@@ -4704,17 +3420,80 @@ selectMedia = async (element, mediaType = 1, mediaPath, duration = null, fileSiz
 
                 $('.spotlight').removeClass('d-none')
             }
-        }
-        else {
-            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`)
+        } else if (mediaTypeName == 'video') {
 
-            if (selectMediaInput.length > 0) {
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`.SelectMediaInput${mediaKey}`).first()
+
+            if (selectMediaInput.length > 0 && mediaControl.length > 0) {
+
                 selectMediaInput.val(mediaPath)
-                selectMediaInput.trigger('change')
-                selectMediaInput.trigger('blur')
+
+                mediaControl.attr('src', mediaPath)
+
+                if (duration <= 0) {
+
+                    duration = await getDuration(mediaPath)
+
+                    if (duration) {
+
+                        let durationTime = timeFormat(Math.floor(duration))
+
+                        $('input.duration').val(durationTime)
+
+                        $('#Command_NewDetailInput_AudioSize').val(Math.floor(fileSize))
+
+                        $('#Command_NewDetailInput_AudioDuration').val(durationTime)
+                    }
+
+                } else {
+
+                    let durationTime = timeFormat(duration)
+
+                    $('input.duration').val(durationTime)
+
+                    $('#Command_NewDetailInput_AudioSize').val(fileSize)
+
+                    $('#Command_NewDetailInput_AudioDuration').val(durationTime)
+                }
+
+                $('.uncheck-video').removeClass('d-none')
+
+                $('.video-preview').removeClass('d-none')
             }
         }
-    } else if (mediaTypeName == 'audio') {
+        else {
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`.SelectMediaInput${mediaKey}`).first()
+
+            if (selectMediaInput.length > 0) {
+                if (mediaKey == '_Thumnail_News_Create_') {
+                    getImageSizeAsync(mediaPath)
+                        .then(function (size) {
+                            if (size.width < 800 || ((size.width / size.height) != (5 / 3))) {
+                                toastMessage(false, "Ảnh thumb yêu cầu đúng tỷ lệ 5:3 và tối thiểu width là 800px");
+                            } else {
+                                selectMediaInput.val(mediaPath)
+                                mediaControl.val(mediaPath)
+                                selectMediaInput.trigger('change')
+                                selectMediaInput.trigger('blur')
+                                $('.remove-button').removeClass('d-none')
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                        });
+                } else {
+                    selectMediaInput.val(mediaPath)
+                    mediaControl.val(mediaPath)
+                    selectMediaInput.trigger('change')
+                    selectMediaInput.trigger('blur')
+                    $('.remove-button').removeClass('d-none')
+                }
+            }
+        }
+    }
+    else if (mediaTypeName == 'audio') {
 
         const profileSelected = $('#Command_HostVoices option:selected'),
             profileId = profileSelected.val() || 0,
@@ -4769,16 +3548,227 @@ selectMedia = async (element, mediaType = 1, mediaPath, duration = null, fileSiz
 
         $('#Command_HostVoices').empty().trigger('change')
     }
+    else if (mediaTypeName == 'video') {
+        //Chọn video cho Video Form Create Update
+        $('#Command_NewDetailInput_Content').val(mediaPath);
+
+        $('#Command_NewDetailInput_AudioSize').val(fileSize);
+
+        if (duration <= 0) {
+
+            duration = await getDuration(mediaPath)
+
+            if (duration) {
+
+                let durationTime = timeFormat(Math.floor(duration));
+
+                $('#Command_NewDetailInput_AudioDuration').val(durationTime);
+            }
+
+        } else {
+
+            let durationTime = timeFormat(duration)
+
+            $('#Command_NewDetailInput_AudioDuration').val(durationTime);
+        }
+    }
 }
 
+selectMedia = async (element) => {
+
+    const { modalid: modalId, mediatypeid: mediaTypeId, mediapath: mediaPath, medianame: mediaName } = element.dataset
+    if (typeof mediaPath == 'undefined' || mediaPath.trim().length <= 0) {
+        return
+    }
+    if (modalId) {
+        modalMedia = $(`#modalDataPopup_${modalId}`)
+    }
+    else {
+        modalMedia = $(`#modalDataPopup`)
+    }
+    console.log(modalId)
+    if (modalMedia.length > 0) {
+
+        modalMedia.modal('hide')
+
+        let mediaKey = modalMedia.attr('data-key') || ''
+
+        if (mediaKey.trim().length > 0) {
+
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`#SelectMediaView${mediaKey}`)
+
+            if (selectMediaInput.length > 0) {
+
+                selectMediaInput.val(mediaPath)
+
+                mediaControl.attr('src', mediaPath)
+            }
+        }
+    }
+}
+modalDocsGet = (element, key, keywords = '', newsTypeId = 1, title = "Chọn văn bản", searchByDate = 1) => {
+    element.attr('data-modal', 'modal-xl')
+    modalSetSize(element, $('#modalDataChildPopup'))
+    let timeout
+    elementAction = element
+    const elementHtml = $(element).html(),
+        path = `/BongDa24hDocs/Docs/SelectDocs`
+
+    modalDataChildPopup.removeAttr('data-key')
+    modalDataChildPopup.removeAttr('data-type')
+
+    debounce(
+        fetchData({
+            url: path,
+            type: 'GET',
+            dataType: 'html',
+            beforeSend: () => {
+                onBegin(element)
+            },
+            callback: () => {
+                if (timeout) {
+                    clearTimeout(timeout)
+                }
+
+                timeout = setTimeout(() => {
+                    $(element).removeAttr('disabled')
+                    $(element).html(elementHtml)
+                    timeout = null
+                }, 300)
+            }
+        }).then(response => {
+
+            modalDataChildPopup.attr('data-key', key)
+
+            modalDataChildPopup.attr('data-type', newsTypeId)
+
+            modalDataChildPopupContent.html(response)
+
+            const isEmpty = $(response).filter('table').
+                find('.not-found').first().length > 0
+
+            if (!isEmpty) {
+                if ($('#sticky-table-modal').length) {
+                    $('#sticky-table-modal').bootstrapTable({
+                        stickyHeader: true,
+                        stickyHeaderOffsetY: stickyHeaderOffsetY
+                    })
+                }
+
+                initTooltip(modalDataChildPopupContent)
+            }
+
+            var selectModal = modalDataChildPopupContent.find('.select-editor-modal')
+
+            selectModal.length && selectModal.each(function (index, value) {
+                var $this = $(value);
+                var options = $.extend({
+                    dropdownParent: $('#modalDataChildPopup'),
+                }, $this.data('options'))
+                $this.select2(options)
+            })
+
+            if (modalDataChildPopupContent.find('input.datepicker').length > 0) {
+                flatpickrInit()
+            }
+
+            modalDataChildPopup.find('.modal-title').first().text(title)
+
+            if (!modalDataChildPopupContent.hasClass('fs-0')) {
+                modalDataChildPopupContent.addClass('fs-0')
+            }
+
+
+            modalDataChildPopup.modal('show')
+        })
+    )
+}
+modalNewsGet = (element, key, keywords = '', newsTypeId = 1, title = "Chọn văn bản", searchByDate = 1) => {
+    element.attr('data-modal', 'modal-xl')
+    modalSetSize(element, $('#modalDataChildPopup'))
+    let timeout
+    elementAction = element
+    const elementHtml = $(element).html(),
+        path = `/BongDa24hCMS/Articles/SelectArticles`
+
+    modalDataChildPopup.removeAttr('data-key')
+    modalDataChildPopup.removeAttr('data-type')
+
+    debounce(
+        fetchData({
+            url: path,
+            type: 'GET',
+            dataType: 'html',
+            beforeSend: () => {
+                onBegin(element)
+            },
+            callback: () => {
+                if (timeout) {
+                    clearTimeout(timeout)
+                }
+
+                timeout = setTimeout(() => {
+                    $(element).removeAttr('disabled')
+                    $(element).html(elementHtml)
+                    timeout = null
+                }, 300)
+            }
+        }).then(response => {
+
+            modalDataChildPopup.attr('data-key', key)
+
+            modalDataChildPopup.attr('data-type', newsTypeId)
+
+            modalDataChildPopupContent.html(response)
+
+            const isEmpty = $(response).filter('table').
+                find('.not-found').first().length > 0
+
+            if (!isEmpty) {
+                if ($('#sticky-table-modal').length) {
+                    $('#sticky-table-modal').bootstrapTable({
+                        stickyHeader: true,
+                        stickyHeaderOffsetY: stickyHeaderOffsetY
+                    })
+                }
+
+                initTooltip(modalDataChildPopupContent)
+            }
+
+            var selectModal = modalDataChildPopupContent.find('.select-editor-modal')
+
+            selectModal.length && selectModal.each(function (index, value) {
+                var $this = $(value);
+                var options = $.extend({
+                    dropdownParent: $('#modalDataChildPopup'),
+                }, $this.data('options'))
+                $this.select2(options)
+            })
+
+            if (modalDataChildPopupContent.find('input.datepicker').length > 0) {
+                flatpickrInit()
+            }
+
+            modalDataChildPopup.find('.modal-title').first().text(title)
+
+            if (!modalDataChildPopupContent.hasClass('fs-0')) {
+                modalDataChildPopupContent.addClass('fs-0')
+            }
+
+
+            modalDataChildPopup.modal('show')
+        })
+    )
+}
 selectData = (element, path, title = '') => {
     if (typeof path == 'undefined' || path.trim().length <= 0) {
         return;
     }
 
-    modalDataPopup.modal('hide')
+    modalDataChildPopup.modal('hide')
 
-    let dataKey = modalDataPopup.attr('data-key') || ''
+    let dataKey = modalDataChildPopup.attr('data-key') || ''
 
     if (dataKey.trim().length > 0) {
 
@@ -4789,7 +3779,120 @@ selectData = (element, path, title = '') => {
         }
     }
 }
+selectMedia3 = async (element, mediaType = 1, mediaPath, duration = null, fileSize = 0, mediaName = '') => {
+    if (typeof mediaPath == 'undefined' || mediaPath.trim().length <= 0) {
+        return;
+    }
 
+    modalDataChildPopup.modal('hide')
+
+    let mediaKey = modalDataChildPopup.attr('data-key') || ''
+    const mediaTypeName = getMediaType(mediaType)
+
+    if (mediaKey.trim().length > 0) {
+
+        if (mediaKey.includes('key_cke_')) {
+            $(`.${mediaKey}`).find('input').val(mediaPath)
+            $($(`.${mediaKey}`).find('input')[0]).focus().blur()
+            $(`.${mediaKey}.alt-input`).find('input').val(mediaName)
+        }
+        else if (mediaTypeName == 'audio') {
+
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`.SelectMediaInput${mediaKey}`).first()
+
+            if (selectMediaInput.length > 0 && mediaControl.length > 0) {
+
+                selectMediaInput.val(mediaPath)
+
+                mediaControl.attr('src', mediaPath)
+
+                if (duration <= 0) {
+
+                    duration = await getDuration(mediaPath)
+
+                    if (duration) {
+
+                        $('input.duration').val(timeFormat(Math.floor(duration)))
+
+                        $('#Command_Duration').val(Math.floor(duration))
+
+                        $('#Command_FileDuration').val(Math.floor(duration))
+                    }
+
+                } else {
+
+                    $('input.duration').val(timeFormat(duration))
+
+                    $('#Command_Duration').val(duration)
+
+                    $('#Command_FileDuration').val(duration)
+                }
+
+                spotlightArray = []
+
+                bindDataSpotlight()
+
+                $('.uncheck-radio').removeClass('d-none')
+
+                $('.spotlight').removeClass('d-none')
+            }
+        } else if (mediaTypeName == 'video') {
+
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`.SelectMediaInput${mediaKey}`).first()
+
+            if (selectMediaInput.length > 0 && mediaControl.length > 0) {
+
+                selectMediaInput.val(mediaPath)
+
+                mediaControl.attr('src', mediaPath)
+
+                if (duration <= 0) {
+
+                    duration = await getDuration(mediaPath)
+
+                    if (duration) {
+
+                        let durationTime = timeFormat(Math.floor(duration))
+
+                        $('input.duration').val(durationTime)
+
+                        $('#Command_NewDetailInput_AudioSize').val(Math.floor(fileSize))
+
+                        $('#Command_NewDetailInput_AudioDuration').val(durationTime)
+                    }
+
+                } else {
+
+                    let durationTime = timeFormat(duration)
+
+                    $('input.duration').val(durationTime)
+
+                    $('#Command_NewDetailInput_AudioSize').val(fileSize)
+
+                    $('#Command_NewDetailInput_AudioDuration').val(durationTime)
+                }
+
+                $('.uncheck-video').removeClass('d-none')
+
+                $('.video-preview').removeClass('d-none')
+            }
+        }
+        else {
+            const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
+                mediaControl = $(`.SelectMediaInput${mediaKey}`).first()
+
+            if (selectMediaInput.length > 0) {
+                selectMediaInput.val(mediaPath)
+                mediaControl.val(mediaPath)
+                selectMediaInput.trigger('change')
+                selectMediaInput.trigger('blur')
+                $('.remove-button').removeClass('d-none')
+            }
+        }
+    }
+}
 editorSelectMedia = (element, mediaType = 1) => {
     try {
 
@@ -4879,6 +3982,7 @@ bindNewsVoiceVOH = () => {
     newsVoicesVOHElement.empty()
 
     if (newsVoicesVOH && newsVoicesVOH.length > 0) {
+        ad
 
         //if (voiceTypes && voiceTypes.length > 0) {
         //    newsVoicesVOH.forEach(function (newsVoice, i) {
@@ -4957,234 +4061,6 @@ removeNewsVoicesVOH = (index) => {
     return false
 }
 
-initDocReviewStatusCount = () => {
-
-    var container = $('#docReviewStatusCount')
-    var url = container.data('url') || '/LuatVietNamDoc/Docs?handler=DocReviewStatusCount'
-    if (!container.length) return
-
-    // Lấy các tham số từ URL
-    var params = Object.fromEntries(new URLSearchParams(window.location.search))
-
-    $.ajax({
-        url: url,
-        type: 'GET',
-        dataType: 'html',
-        data: params
-    })
-        .done(function (response) {
-            container.find('.placeholder').fadeOut(300).promise().done(function () {
-                container.empty().html(response).css('opacity', '0').animate({ opacity: 1 }, 300)
-            })
-        })
-        .fail(function (error) {
-            console.error(error)
-        })
-}
-
-initDocReviewReviewStatusCount = () => {
-    var container = $('#docReview_ReviewStatusCount')
-    var url = container.data('url') || '/LuatVietNamDoc/Docs/DocsReview?handler=DocReviewStatusCount'
-    if (!container.length) return
-
-    // Lấy các tham số từ URL
-    var params = Object.fromEntries(new URLSearchParams(window.location.search))
-
-    $.ajax({
-        url: url,
-        type: 'GET',
-        dataType: 'html',
-        data: params
-    })
-        .done(function (response) {
-            container.find('.placeholder').fadeOut(300).promise().done(function () {
-                container.empty().html(response).css('opacity', '0').animate({ opacity: 1 }, 300)
-            })
-        })
-        .fail(function (error) {
-            console.error(error)
-        })
-}
-
-initDocStandardReviewStatusCount = () => {
-
-    var container = $('#docStandardStatusCount')
-
-    if (!container.length) return
-
-    // Lấy các tham số từ URL
-    var params = Object.fromEntries(new URLSearchParams(window.location.search))
-
-    $.ajax({
-        url: '/LuatVietNamDoc/DocStandardFulls?handler=DocReviewStatusCount',
-        type: 'GET',
-        dataType: 'html',
-        data: params
-    })
-        .done(function (response) {
-            container.find('.placeholder').fadeOut(300).promise().done(function () {
-                container.empty().html(response).css('opacity', '0').animate({ opacity: 1 }, 300)
-            })
-        })
-        .fail(function (error) {
-            console.error(error)
-        })
-}
-
-initTooltipDocProperties = (tooltip = $('#tooltip-doc-props'),
-    hoverSelector = '.doc-property-item') => {
-    const cache = {};
-    let currentRequest = null;
-
-    const adjustTooltipPosition = (x, y) => {
-        const offset = 10;
-        const tooltipWidth = tooltip.outerWidth();
-        const tooltipHeight = tooltip.outerHeight();
-        const windowWidth = $(window).width();
-        const windowHeight = $(window).height();
-
-        // Điều chỉnh vị trí ngang
-        if (x + tooltipWidth + offset > windowWidth) {
-            x = windowWidth - tooltipWidth * 2 - offset;
-        } else {
-            x += offset;
-        }
-
-        // Điều chỉnh vị trí dọc
-        if (y + tooltipHeight + offset > windowHeight - 10) {
-            y = y - tooltipHeight - offset;
-        } else {
-            y += offset;
-        }
-
-        tooltip.css({ left: x, top: y });
-    };
-
-    $(document)
-        .on('mouseenter', hoverSelector, function (e) {
-            const element = $(this);
-            const docId = element.data('id');
-            const languageId = element.data('lang');
-            console.log(1234)
-            tooltip.text('Đang tải dữ liệu...').show();
-            adjustTooltipPosition(e.pageX, e.pageY);
-
-            // Kiểm tra cache
-            if (cache[docId]) {
-                tooltip.html(cache[docId]);
-                return;
-            }
-
-            // Hủy request đang chờ nếu có
-            if (currentRequest) {
-                currentRequest.abort();
-            }
-
-            currentRequest = $.ajax({
-                url: '/LuatVietNamDoc/Docs?handler=GetTooltipDocProperties',
-                data: { docId, languageId },
-                method: 'GET',
-                success: function (content) {
-                    cache[docId] = content;
-                    tooltip.html(content);
-                    adjustTooltipPosition(e.pageX, e.pageY);
-                },
-                error: function () {
-                    tooltip.html('').fadeOut(2000);
-                }
-            });
-        })
-        .on('mouseleave', hoverSelector, function () {
-            tooltip.stop(true, true).hide();
-            if (currentRequest) {
-                currentRequest.abort();
-            }
-        });
-
-    $(document).mousemove(function (e) {
-        if (tooltip.is(':visible')) {
-            adjustTooltipPosition(e.pageX, e.pageY);
-        }
-    });
-}
-
-initTooltipDocProperties2 = (tooltip = $('#tooltip-doc-props'),
-    hoverSelector = '.doc-property-item2') => {
-    const cache = {};
-    let currentRequest = null;
-
-    const adjustTooltipPosition = (x, y) => {
-        const offset = 10;
-        const tooltipWidth = tooltip.outerWidth();
-        const tooltipHeight = tooltip.outerHeight();
-        const windowWidth = $(window).width();
-        const windowHeight = $(window).height();
-
-        // Điều chỉnh vị trí ngang
-        if (x + tooltipWidth + offset > windowWidth) {
-            x = windowWidth - tooltipWidth * 2 - offset;
-        } else {
-            x += offset;
-        }
-
-        // Điều chỉnh vị trí dọc
-        if (y + tooltipHeight + offset > windowHeight - 10) {
-            y = y - tooltipHeight - offset;
-        } else {
-            y += offset;
-        }
-
-        tooltip.css({ left: x, top: y });
-    };
-
-    $(document)
-        .on('mouseenter', hoverSelector, function (e) {
-            const element = $(this);
-            const docId = element.data('id');
-            const languageId = element.data('lang');
-
-            tooltip.text('Đang tải dữ liệu...').show();
-            adjustTooltipPosition(e.pageX, e.pageY);
-
-            // Kiểm tra cache
-            if (cache[docId]) {
-                tooltip.html(cache[docId]);
-                return;
-            }
-
-            // Hủy request đang chờ nếu có
-            if (currentRequest) {
-                currentRequest.abort();
-            }
-
-            currentRequest = $.ajax({
-                url: '/LuatVietNamDoc/DocsConsolidation?handler=GetTooltipDocProperties',
-                data: { docId, languageId },
-                method: 'GET',
-                success: function (content) {
-                    cache[docId] = content;
-                    tooltip.html(content);
-                    adjustTooltipPosition(e.pageX, e.pageY);
-                },
-                error: function () {
-                    tooltip.html('').fadeOut(2000);
-                }
-            });
-        })
-        .on('mouseleave', hoverSelector, function () {
-            tooltip.stop(true, true).hide();
-            if (currentRequest) {
-                currentRequest.abort();
-            }
-        });
-
-    $(document).mousemove(function (e) {
-        if (tooltip.is(':visible')) {
-            adjustTooltipPosition(e.pageX, e.pageY);
-        }
-    });
-}
-
 quickSearch = (inputSearch = '#QuickSearch', filterItems = '[data-filter-item]', callBack) => {
     const keywords = toSlug($(inputSearch).val())
     var value = ''
@@ -5220,7 +4096,7 @@ radioBlockCateNotDisplay = (item) => {
         }
     }
 }
-const select2CacheStore = {};
+
 initSelect2AutoComplete = (elements) => {
     elements = elements || $('.select2-auto-complete');
     if (elements.length > 0) {
@@ -5257,7 +4133,8 @@ initSelect2AutoComplete = (elements) => {
                 minLength = self.data('min') | 0,
                 isSearch = self.data('search') || false,
                 allowClear = self.data('allowclear') || false,
-                maximumSelect = self.data('max-selected') || 0;
+                siteId = self.data('siteid') || 0
+            maximumSelect = self.data('max-selected') || 0;
 
             var selected = []
             var initials = []
@@ -5330,39 +4207,18 @@ initSelect2AutoComplete = (elements) => {
                         },
                         data: function (params) {
                             var query = {
-                                keywords: params.term
+                                keywords: params.term,
+                                siteId: siteId
                             }
-
+                            console.log(query)
                             return query;
-                        },
-                        // Dùng transport để kiểm tra cache theo key (URL + từ khóa 'default' nếu rỗng)
-                        transport: function (params, success, failure) {
-
-                            const term = params.data.keywords ? params.data.keywords.trim() : '';
-                            const key = urlRequest + '_' + (term === "" ? 'default' : term);
-
-                            // Nếu term rỗng và có cache thì sử dụng cache
-                            if (term === "" && select2CacheStore[key]) {
-                                success(select2CacheStore[key]);
-                                return;
-                            }
-                            // Gọi ajax bình thường
-                            var $request = $.ajax(params);
-                            $request.then(function (data) {
-                                // Nếu term rỗng thì lưu vào cache
-                                if (term === "") {
-                                    select2CacheStore[key] = data;
-                                }
-                                success(data);
-                            }, failure);
-                            return $request;
                         },
                         processResults: function (response) {
 
-                            if (isSearch && !response.Data.some(item => item.id === '0')) {
+                            if (isSearch) {
                                 response.Data.unshift({
                                     id: '0',
-                                    text: '...'
+                                    text: 'Tất cả'
                                 })
                             }
 
@@ -5401,7 +4257,6 @@ initSelect2AutoComplete = (elements) => {
                 }
 
                 self.select2(options).on("select2:select", function (e) {
-
                     var $container = $(this).next().find('.select2-selection__rendered');
                     $container.find('li.select2-selection__choice').sort(function (a, b) {
                         return -1;
@@ -5438,7 +4293,7 @@ initSelect2AutoComplete = (elements) => {
                 })
             }
 
-            if (urlRequest.trim().length == 0 || dropdownParent.length > 0 && selected.length > 0) {
+            if (urlRequest.trim().length == 0 || dropdownParent.length > 0) {
 
                 self.val(selected).trigger('change')
 
@@ -5446,6 +4301,7 @@ initSelect2AutoComplete = (elements) => {
         })
     }
 }
+
 addItemAutocomplete = (element, ...data) => {
 
     const [Id, Title, Slug, inputName, itemsLimit] = data
@@ -5480,96 +4336,21 @@ addItemAutocomplete = (element, ...data) => {
 
     selectedElement.append(`
                 <div class="row gx-2 flex-between-center">
-				    <div class="col-sm-12">
-					    <div class="d-flex flex-between-center">
-						    <h6 class="mb-0 text-700"><a href="${Slug}" title="${Title}" target="_blank">${Title}</a></h6><a href="#!" class="btn btn-sm btn-link text-danger" onclick="removeItemAutocomplete(this, ${Id})" title="Xóa khỏi danh sách"><span class="fs--1 fas fa-trash-alt"></span></a>
+                    <div class="col-sm-12">
+                        <div class="d-flex flex-between-center">
+                            <h6 class="mb-0 text-700"><a href="${Slug}" title="${Title}" target="_blank">${Title}</a></h6><a href="#!" class="btn btn-sm btn-link text-danger" onclick="removeItemAutocomplete(this, ${Id})" title="Xóa khỏi danh sách"><span class="fs--1 fas fa-trash-alt"></span></a>
                             <input type="hidden" class="auto-complete-value" name="${inputName}" value="${Id}" />
-					    </div>
-				    </div>
-			    </div>
+                        </div>
+                    </div>
+                </div>
             `)
 
     return false
 }
-AddNewOnSelect = (element) => {
-    var ul = $(element).closest("ul");
-    var parentDiv = $(element).closest("div.modal");
-    var idParentDiv = '';
-    if (parentDiv.length) {
-        idParentDiv = $(parentDiv).attr('id');
-        if (idParentDiv.length) {
-            if (ul.length) {
-                var ulid = $(ul).attr('id');
-                if (ulid != undefined) {
-                    ulid = ulid.replaceAll("select2-", "").replaceAll("-results", "");
-                    var select = $('#' + ulid);
-                    if (select.length) {
-                        var dataUrl = $(select).attr('data-url-add');
-                        var dataTitle = $(select).attr('data-title-add');
-                        if (dataUrl.length) {
-                            var $button = $('<button/>', {
-                                type: 'button',
-                                'class': 'btn btn-primary no-focus ms-2',
-                                'data-modal': 'modal-lg',
-                                text: 'Thêm'
-                            });
-                            modalGet(null, dataUrl, "");
-                            //window.open(dataUrl+'?layout=_LayoutBlank', "popupWindow", "width=600,height=800,scrollbars=yes");
-                            //modalChild3Get($button, dataUrl, dataTitle);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-exportFile = (element, handlerName = 'Export') => {
-    console.log(window.location.href)
-    let url = new URL(window.location.href),
-        searchParams = url.searchParams
 
-    searchParams.set('handler', handlerName)
-    buttonAction = $(element)
-    url.search = searchParams.toString()
-    let urlRequest = url.toString()
-
-    buttonAction.attr('disabled', 'disabled')
-    buttonAction.data('og', buttonAction.html())
-    if (buttonAction.hasClass('cke_element')) {
-        buttonAction.html('<span style="padding: 0 5px;">Vui lòng đợi...</span>')
-    } else if (buttonAction.hasClass('cke_button')) {
-        buttonAction.html('<span style="padding: 0 2px;">...</span>')
-    } else {
-        buttonAction.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>')
-    }
-    window.location.href = urlRequest
-    setTimeout(removeLoading(element), 5000)
-
-}
-const popupCenter = ({ url, title, w, h }) => {
-    const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
-    const dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
-
-    const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
-    const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
-
-    const systemZoom = width / window.screen.availWidth;
-    const left = (width - w) / 2 / systemZoom + dualScreenLeft
-    const top = (height - h) / 2 / systemZoom + dualScreenTop
-    const newWindow = window.open(url, title,
-        `
-      scrollbars=yes,
-      width=${w / systemZoom}, 
-      height=${h / systemZoom}, 
-      top=${top}, 
-      left=${left}
-      `
-    )
-
-    if (window.focus) newWindow.focus();
-}
 removeItemAutocomplete = (element, id) => {
-    const self = $(element), parent = self.closest('.row')
+    const self = $(element),
+        parent = self.closest('.row')
 
     if (parent) {
         let buttons = {
@@ -5578,7 +4359,20 @@ removeItemAutocomplete = (element, id) => {
                 btnClass: 'btn btn-danger',
                 keys: ['enter'],
                 action: function () {
-                    parent.remove()
+                    fetchData({
+                        url: '/NaviMS/FileUploads/Index?handler=Delete',
+                        type: 'POST',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                        },
+                        dataType: 'json',
+                        data: { 'id': id },
+                    }).then(response => {
+                        if (response && response.Succeeded) {
+                            parent.remove()
+                        }
+                        toastMessage(response.Succeeded, response.Messages.join('<br />'));
+                    })
                 }
             }
         }
@@ -5592,31 +4386,75 @@ removeItemAutocomplete = (element, id) => {
         })
     }
 
-    return flase
+    return false
 }
-
 initAutocomplete = () => {
     const element = $('.input-auto-complete')
 
     if (element.length > 0) {
 
         $(document).on('click', (event) => {
-            console.log(1)
             if (!$(event.target).closest('.did-floating-label-content').length) {
                 $('.autocomplete-result').addClass('d-none')
             }
         })
+
+        element.on('focus', (e) => {
+            let self = $(e.target), parent = self.closest('.auto-complete'),
+                resultElement = parent.find('.autocomplete-result').first(),
+                newsRelates = self.hasClass('news-relates'), tagIds = ''
+
+            if (newsRelates) {
+                tagIds = $('#Command_Tags option:selected').map(function () {
+                    return $(this).val();
+                }).get().join(',')
+            }
+
+            if (tagIds.trim().length == 0 && resultElement && resultElement.hasClass('d-none') && resultElement.children().length > 0) {
+                resultElement.removeClass('d-none')
+            }
+        })
+
+        element.on('search', function (e) {
+            let self = $(e.target), parent = self.closest('.auto-complete'),
+                resultElement = parent.find('.autocomplete-result').first(),
+                inputValue = self.val().trim(),
+                newsRelates = self.hasClass('news-relates'), tagIds = ''
+
+            if (newsRelates) {
+                tagIds = $('#Command_Tags option:selected').map(function () {
+                    return $(this).val();
+                }).get().join(',')
+            }
+
+            if (tagIds.trim().length == 0 && inputValue.length == 0 && resultElement) {
+                resultElement.empty()
+                resultElement.addClass('d-none')
+            }
+        });
 
         element.on('click keyup', debounce((e) => {
             let self = $(e.target), urlRequest = self.data('url'),
                 itemsLimit = self.data('items') || 3, inputName = self.data('name') || '',
                 inputValue = self.val().trim(), parent = self.closest('.auto-complete'),
                 iconContainer = self.next('.icon-container'),
-                resultElement = parent.find('.autocomplete-result').first();
-
+                resultElement = parent.find('.autocomplete-result').first(),
+                newsRelates = self.hasClass('news-relates'), tagIds = ''
 
             // get keycode of current keypress event
             var code = (e.keyCode || e.which)
+
+            if (newsRelates) {
+                tagIds = $('#Command_Tags option:selected').map(function () {
+                    return $(this).val();
+                }).get().join(',')
+            }
+
+            if (tagIds.trim().length == 0 && inputValue.length == 0) {
+                resultElement.empty()
+                resultElement.addClass('d-none')
+                return
+            }
 
             // do nothing if it's an arrow key or enter
             if (code == 37 || code == 38 || code == 39 || code == 40 || code == 13) {
@@ -5630,6 +4468,7 @@ initAutocomplete = () => {
                 data:
                 {
                     keywords: inputValue,
+                    tagIds: tagIds
                 },
                 beforeSend: () => {
                     iconContainer.removeClass('d-none')
@@ -5644,20 +4483,28 @@ initAutocomplete = () => {
                 if (response.Data.length > 0) {
                     let htmlAppend = ''
                     for (var index = 0; index < response.Data.length; index++) {
-                        //<a href="${response.Data[index].slug}" target="_blank" title="${response.Data[index].title}">${response.Data[index].slug}</a>
                         htmlAppend = `<div data-id="${response.Data[index].id}" class="row g-3 align-items-center text-center text-md-start py-1 border-bottom border-200">
+						    <div class="col-md-auto">
+							    <div class="avatar">
+									<img class="bg-attachment" src="${response.Data[index].thumbnail}?w=160&h=90" onerror="this.src='/img/no-image.png'" alt="${response.Data[index].title}" width="100%" />
+							    </div>
+						    </div>
 						    <div class="col px-x1 py-1">
 							    <div class="row">
 								    <div class="col-12">
 									    <h6 class="fs-0">${response.Data[index].title}</h6>
 								    </div>
+									    <div class="col-12">
+										    <p class="fs--1 mb-1 text-800"><a href="${response.Data[index].slug}" target="_blank" title="${response.Data[index].title}">${response.Data[index].slug}</a></p>
+									        <p class="fs--2 text-600">${response.Data[index].publishedat}</p>
+                                            </div>
 							    </div>
 						    </div>
                             <div class="col-md-auto d-flex justify-content-center">`
                         if (response.Data[index].isrelated) {
                             htmlAppend += `<a href="javascript:void(0)" class="btn btn-falcon-default icon-item" title="Bài viết đã được chọn làm tin liên quan"><i class="fas fa-check-circle text-success"></i> </a>`
                         } else {
-                            htmlAppend += `<a href="javascript:void(0)" class="btn btn-falcon-default icon-item focus-bg-primary" onclick="return addItemAutocomplete(this, ${response.Data[index].id}, '${response.Data[index].title.replaceAll('"', '&quot;').replaceAll('\'', '&quot;')}', '${response.Data[index].slug}', '${inputName}', ${itemsLimit})" title="Thêm vào danh sách"><i class="fas fa-plus"></i> </a>`
+                            htmlAppend += `<a href="javascript:void(0)" class="btn btn-falcon-default icon-item focus-bg-primary" onclick="return addItemAutocomplete(this, ${response.Data[index].id}, '${response.Data[index].title}', '${response.Data[index].slug}', '${inputName}', ${itemsLimit})" title="Thêm vào danh sách"><i class="fas fa-plus"></i> </a>`
                         }
                         `</div>
 					    </div>`
@@ -5672,11 +4519,9 @@ initAutocomplete = () => {
                 }
 
             }).catch((error) => {
-                console.log(error)
+
                 resultElement.addClass('d-none')
-                showMessage({
-                    message: 'Vui lòng thử lại sau.',
-                })
+
             })
 
         }, 500))
@@ -5692,7 +4537,7 @@ onExportWithQuery = (element, url) => {
         $.each(formDataArray, function (i, field) {
             formData.append(field.name, field.value);
         });
-        console.log(formData);
+
         $.ajax({
             url: url,
             type: 'POST',
@@ -5776,7 +4621,7 @@ function formatRepo(data, container) {
         $(container).addClass(`profile-selected-${data.type}`)
     }
 
-    return data.text ?? data.title;
+    return data.text;
 }
 function formatRepoSelection(data, container) {
 
@@ -5786,7 +4631,94 @@ function formatRepoSelection(data, container) {
 
     return data.text;
 }
+function resultFormatData(data) {
+    if (!data.id || data.id <= 0) { return data.text; }
 
+    let itemHtml = `<div class="row profile align-items-center text-center text-md-start p-1 border-bottom border-200">
+                            <div class="col px-x1- py-2-">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="fs-0">${data.text}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`
+
+    return $(
+        itemHtml
+    )
+}
+function resultFormatDataSelection(data) {
+    if (data.text == null || data.text == '') {
+        data.text = data.title;
+    }
+    if (data.text && data.text.trim()) {
+        return `${data.text}`
+    }
+    return data.text
+}
+function docFormatData(data) {
+    if (!data.id || data.id <= 0) { return data.text; }
+
+    let itemHtml = `<div class="row profile align-items-center text-center text-md-start p-1 border-bottom border-200">
+                            <div class="col px-x1- py-2-">
+                                <div class="row">
+                                    <div class="col-12 mb-0 mt-0">
+                                        <div class="fs--1">${data.text} (<i>${data.docIdentity}</i> - ${data.issuedate})</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`
+    //dành cho doclink 
+    return $(
+        itemHtml
+    )
+}
+function docFormatDataSelection(data) {
+    var id = data.id.split('site')[0]
+    $("#modalPopup").find('input[name*="Command.DocName"]').val(data.text);
+    $("#modalPopup").find('input[name*="Command.TextLink"]').val(data.docIdentity);
+
+    $("#modalPopup").find('input[name*="Command.DocReferenceId"]').val(parseInt(id));
+    $("#modalPopup").find('input[name*="Command.UrlLink"]').val(data.docurl);
+    $("#modalPopup").find('input[name*="Command.SiteReferenceId"]').val(data.siteid);
+    $("#modalPopup").find('input[name*="Command.SiteIdPatten"]').val(data.siteid);
+    $("#modalPopup").find('input[name*="Command.DocIdPatten"]').val(data.docid);
+    $("#modalPopup").find('input[name*="Command.DocUrl"]').val(data.docurl);
+    if (data.siteid) {
+        $('#Command_DocReferenceIds').prop('data-siteref', data.siteid);
+        $('#Command_DocReferenceIds').data('siteref', data.siteid);
+    }
+    else {
+        $('#Command_DocReferenceIds').prop('data-siteref', 0);
+        $('#Command_DocReferenceIds').data('siteref', 0);
+    }
+    if (data.text == null) {
+        data.text = data.title;
+    }
+    if (data.docIdentity && data.text.trim() != data.docIdentity.trim()) {
+        return `${data.docIdentity.trim()}`
+    }
+    return data.text
+}
+function formatOption(option) {
+    if (!option.id) {
+        return option.text;  // Nếu không có giá trị, trả về tên tùy chọn
+    }
+    // Tạo phần tử checkbox với tùy chọn
+    var $option = $(
+        '<span><input type="checkbox" style="margin-right: 8px;" /> ' + option.text + '</span>'
+    );
+    return $option;
+}
+
+function formatSelected(option) {
+    var count = option.length;
+    if (count > 1) {
+        option.text = "Đã chọn " + count + " mục "
+    }
+    return option.text;  // Trả về tên tùy chọn đã chọn
+}
 toSlug = (str, characterReplace = ' ') => {
 
     str = str.toLowerCase();
@@ -5811,7 +4743,7 @@ toSlug = (str, characterReplace = ' ') => {
 resetForm = form => {
 
     $(form).find(':input')
-        .not(':button, :submit, :reset, :hidden, :input[name="Command.Id"], :input[name*="AddMoreData"], select, textarea,iframe')
+        .not(':button, :submit, :reset, :hidden, :input[name="Command.Id"],:input[name="Command.DocId"], :input[name*="AddMoreData"],:input[name*="Command.IsDisplay"], select, textarea,iframe')
         .val('')
         .prop('checked', false)
 
@@ -5821,7 +4753,7 @@ resetForm = form => {
 
     $(form).find('.profile-pic')
         .attr('src', '/img/avatar.png')
-    $(form).find('select[class*=form-select]:not([class*="form-select-submit"])').val(0).trigger("change");
+    $(form).find('select[class*=select-picker-index]').not('[class*= "form-select-submit"]').val(0).trigger("change");
     $('textarea').val('')
 
     if (typeof CKEDITOR != 'undefined') {
@@ -5833,424 +4765,39 @@ resetForm = form => {
         }
 
     }
+    $(form).find('.form-select').each(function () {
+        var element = $(this);
+        var value = element.val();
+        var resetUrl = element.data('reset-url');
+        if (resetUrl) {
+            $.ajax({
+                url: resetUrl,
+                type: "GET",
+                contentType: 'application/json',
+                dataType: "json",
+                success: function (response) {
+                    if (response) {
+                        var html = '<option value="0">...</option>';
+                        $.each(response.Data, function (e, value) {
+                            html += '<option value="' + value.id + '">' + value.text + '</option>'
+                        })
+                        element.html(html)
+
+                    }
+                },
+                error: function (xhr, status, error) {
+                    toastMessage(false, "Vui lòng thử lại");
+                }
+            })
+        }
+
+        element.val(value).trigger("change")
+    })
 }
 
 fetchData = options => {
     return new Promise(function (resolve, reject) {
         $.ajax(options).done(resolve).fail(reject).always(options.callback || {})
-    })
-}
-
-$(document).ready(function () {
-    $('.max-length').each(function () {
-        var maxLength = $(this).attr('maxlength');
-        var currentLength = $(this).val().length;
-        var counterEle = $(this).siblings('.counter');
-        counterEle.text(currentLength + '/' + maxLength);
-    });
-    $('.max-length').on('input', function () {
-        var maxLength = $(this).attr('maxlength');
-        var currentLength = $(this).val().length;
-        var counterEle = $(this).siblings('.counter');
-        counterEle.text(currentLength + '/' + maxLength);
-    });
-});
-
-function selectAllRow() {
-    var chkActionIds = '';
-    $('.main-table>tbody>tr').each(function (index) {
-
-        var chk = $(this).find('.form-check-input:first')
-
-        if (chk.prop('disabled') == false) {
-
-            $(chk).prop('checked', $(event.target).is(":checked"))
-
-            if ($(event.target).is(":checked")) {
-
-                if (chkActionIds.length > 0) chkActionIds += ','
-
-                chkActionIds += $(chk).attr('value')
-
-            }
-        }
-    });
-    console.log(chkActionIds)
-
-    $('.ChkActionIds').attr('value', chkActionIds)
-}
-
-function selectAllRow2() {
-    var chkActionIds = '';
-    $('.main-table>tbody>tr').each(function (index) {
-
-        var chk = $(this).find('.form-check2:first')
-
-        if (chk.prop('disabled') == false) {
-
-            $(chk).prop('checked', $(event.target).is(":checked"))
-
-            if ($(event.target).is(":checked")) {
-
-                if (chkActionIds.length > 0) chkActionIds += ','
-
-                chkActionIds += $(chk).attr('value')
-
-            }
-        }
-    });
-    console.log(chkActionIds)
-
-    $('.ChkActionIds').attr('value', chkActionIds)
-}
-
-function editTextContent(e) {
-    var target = $(e);
-    var id = target.data('id')
-    if (id > 0) {
-        console.log($('#' + id))
-        $('#row' + id).removeClass('d-none')
-        $('#quit' + id).removeClass('d-none')
-        $('#save' + id).removeClass('d-none')
-        $('#text' + id).addClass('d-none')
-    }
-}
-function quitEditTextContent(e) {
-    var target = $(e);
-    var id = target.data('id')
-    if (id > 0) {
-        console.log($('#' + id))
-        $('#text' + id).removeClass('d-none')
-        $('#row' + id).addClass('d-none')
-        $('#quit' + id).addClass('d-none')
-        $('#save' + id).addClass('d-none')
-    }
-}
-function saveTextContent(e) {
-    var target = $(e);
-    var id = target.data('id');
-    var textContent = $('#row' + id).val();
-    var url = target.data('url');
-    var command = {
-        Id: parseInt(id),
-        TextContent: textContent
-    };
-    var urlSuccess = target.data('ajax-success-url');
-    var elementId = target.data('ajax-success-id');
-    //console.log(command)
-    $.ajax({
-        url: url,
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(command),
-        dataType: 'json',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
-        },
-        success: function (response) {
-            if (response.Succeeded) {
-                fetchData({
-                    type: 'GET',
-                    url: urlSuccess,
-                    dataType: 'html'
-                }).then(response => {
-
-                    $('#' + elementId).html(response);
-                })
-            }
-            toastMessage(response.Succeeded, response.Messages.join('<br />'))
-            initSelect2AutoComplete($('.select2-auto-complete'))
-        },
-        error: function (xhr, status, error) {
-            toastMessage(false, "Vui lòng thử lại");
-        }
-    });
-}
-function selectRow() {
-    var allChecked = true;
-    var hasCheck = false;
-    var chkActionIds = '';
-    $('.main-table>tbody>tr').each(function (index) {
-        var chk = $(this).find('.form-check-input:first');
-        if (chk.is(":checked")) {
-            hasCheck = true;
-            if (chkActionIds.length > 0) chkActionIds += ',';
-            chkActionIds += $(chk).attr('value');
-        }
-    });
-    $('.ChkActionIds').attr('value', chkActionIds);
-    if (hasCheck) {
-        $('.bulk-select-actions').removeClass('d-none');
-    }
-    else {
-        $('.bulk-select-actions').addClass('d-none');
-    }
-    if (allChecked) {
-        $('.main-table>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check-input:first');
-            if (chk) {
-                chk.prop('checked', true);
-            }
-        });
-    }
-    else {
-        $('.main-table>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check-input:first');
-            if (chk) {
-                chk.prop('checked', false);
-            }
-        });
-    }
-}
-function selectRow2() {
-    var allChecked = true;
-    var hasCheck = false;
-    var chkActionIds = '';
-    $('.main-table>tbody>tr').each(function (index) {
-        var chk = $(this).find('.form-check2:first');
-        if (chk.is(":checked")) {
-            hasCheck = true;
-            if (chkActionIds.length > 0) chkActionIds += ',';
-            chkActionIds += $(chk).attr('value');
-        }
-    });
-    $('.ChkActionIds').attr('value', chkActionIds);
-    if (hasCheck) {
-        $('.bulk-select-actions').removeClass('d-none');
-    }
-
-    if (allChecked) {
-        $('.main-table>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check2:first');
-            if (chk) {
-                chk.prop('checked', true);
-            }
-        });
-    }
-    else {
-        $('.main-table>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check2:first');
-            if (chk) {
-                chk.prop('checked', false);
-            }
-        });
-    }
-}
-function selectAllRowModal() {
-    var chkActionIds = '';
-    $('.table-modal>tbody>tr').each(function (index) {
-
-        var chk = $(this).find('.form-check-input:first')
-
-        if (chk.prop('disabled') == false) {
-
-            $(chk).prop('checked', $(event.target).is(":checked"))
-
-            if ($(event.target).is(":checked")) {
-
-                if (chkActionIds.length > 0) chkActionIds += ','
-
-                chkActionIds += $(chk).attr('value')
-
-            }
-        }
-    });
-    $('.ChkActionIds').attr('value', chkActionIds)
-}
-
-function selectRowModal() {
-    var allChecked = true;
-    var hasCheck = false;
-    var chkActionIds = '';
-    $('.table-modal>tbody>tr').each(function (index) {
-        var chk = $(this).find('.form-check-input:first');
-        if (!chk.is(":checked")) {
-            allChecked = false;
-        }
-        else {
-            hasCheck = true;
-            if (chkActionIds.length > 0) chkActionIds += ',';
-            chkActionIds += $(chk).attr('value');
-        }
-    });
-    $('.ChkActionIds').attr('value', chkActionIds);
-    if (hasCheck) {
-        $('.bulk-select-actions').removeClass('d-none');
-    }
-
-    if (allChecked) {
-        $('.table-modal>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check-input:first');
-            if (chk) {
-                chk.prop('checked', true);
-            }
-        });
-    }
-    else {
-        $('.table-modal>thead>tr').each(function (index) {
-            var chk = $(this).find('.form-check-input:first');
-            if (chk) {
-                chk.prop('checked', false);
-            }
-        });
-    }
-}
-function selectRadioModal(e) {
-    var ckId = '';
-    var docLink = $(".doc-url").val();
-    var id = $(e).val()
-    if (id > 0) {
-        ckId = id;
-    }
-    //console.log(1234, id)
-    if (ckId > 0) {
-        $(".doc-link").val('')
-    }
-    else {
-        $(".doc-link").val(docLink)
-    }
-    $("#Command_LinkDocItemId").val(ckId)
-    $("#Item3_LinkDocItemId").val(ckId)
-    //console.log(12345, $("#Command_LinkDocItemId").val())
-}
-function docFormatData(data) {
-    if (!data.id || data.id <= 0) { return data.text; }
-
-    let itemHtml = `<div class="row profile align-items-center text-center text-md-start p-1 border-bottom border-200">
-                            <div class="col px-x1- py-2-">
-                                <div class="row">
-                                    <div class="col-12 mb-0 mt-0 ">
-                                        <h6 class="fs--1">${data.text} (<i>${data.docNumber} - ${data.issueDate}</i>)</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`
-    //dành cho doclink 
-    return $(
-        itemHtml
-    )
-}
-function docFormatDataSelection(data) {
-    if (data.title == null) {
-        data.title = data.text;
-    }
-    if (data.id) {
-        $("#Command_Link").val(data.docUrl)
-        $(".doc-link").val(data.docUrl)
-        $(".doc-link-modal").val(data.docUrl)
-    }
-    if (data.docNumber && data.title.trim() != data.docNumber.trim()) {
-        return `${data.docNumber.trim()}`
-    }
-
-
-    return data.title
-}
-function resultFormatData(data) {
-    const name = data?.text || data?.name;
-    if (!data.id || data.id <= 0) { return name; }
-    return name;
-    //let itemHtml = `<div class="row align-items-center text-center text-md-start p-1 border-bottom border-200">
-    //                        <div class="col px-x1- py-2-">
-    //                            <div class="row">
-    //                                <div class="col-12">
-    //                                    <h6 class="fs-0">${name}</h6>
-    //                                </div>
-    //                            </div>
-    //                        </div>
-    //                    </div>`
-
-    //return $(
-    //    itemHtml
-    //)
-}
-function resultFormatDataSelection(data) {
-    if (data.text == null || data.text == '') {
-        data.text = data.title ? data.title : '';
-    }
-    if (data.name && data.text.trim() != data.name.trim()) {
-        return `${data.text} ${data.name.trim()}`
-    }
-    return data.text
-}
-function removeSignatureForURL(str) {
-    if (str == '') {
-        return str;
-    }
-    var input = removerSignature(str);
-    input = input.replaceAll("?", "").replaceAll("&", "").replaceAll("\"", "").replaceAll("'", "");
-    input = input.replaceAll(".", "").replaceAll(",", "").replaceAll(";", "");
-    input = input.replaceAll("@", "").replaceAll("$", "").replaceAll("%", "").replaceAll("*", "");
-    input = input.replaceAll("~", "").replaceAll("\\", "").replaceAll("/", "").replaceAll("!", "");
-    input = input.replaceAll(":", "").replaceAll(")", "").replaceAll("(", "").replaceAll("+", "");
-    input = input.replaceAll("`", "").replaceAll("|", "");
-    while (input == "  ") {
-        input = input.replaceAll("  ", " ");
-    }
-    input = input.replaceAll(" ", "-");
-    return input;
-}
-
-function removerSignature(str) {
-    if (str == '') {
-        return str;
-    }
-    str = str.toLowerCase();
-    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-    str = str.replace(/đ/g, "d");
-    str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, "");
-    str = str.replace(/\u02C6|\u0306|\u031B/g, "");
-    return str;
-}
-function importContent(element) {
-    var target = $(element);
-    var url = target.data('url')
-    var lawJudgId = target.data('value');
-    data = {
-        lawJudgId: lawJudgId
-    }
-    $.ajax({
-        url: url,
-        type: 'GET',
-        contentType: 'application/json',
-        data: data,
-        dataType: 'json',
-        beforeSend: () => {
-            target.attr('disabled', 'disabled')
-            target.data('og', target.html())
-            if (target.hasClass('cke_element')) {
-                target.html('<span style="padding: 0 5px;">Vui lòng đợi...</span>')
-            } else if (target.hasClass('cke_button')) {
-                target.html('<span style="padding: 0 2px;">...</span>')
-            } else {
-                target.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>')
-            }
-        },
-
-        success: (response) => {
-            console.log(response.Data)
-            if (response.Data) {
-                console.log(response.Data)
-                var editors = $('.ckeditor-input')
-                if (editors.length > 0) {
-                    console.log(1)
-                    for (var key in CKEDITOR.instances)
-                        CKEDITOR.instances[key].insertHtml(response.Data);
-                }
-            }
-            else if (response.Messages) {
-                toastMessage(response.Succeeded, response.Messages.join('<br />'))
-            }
-            removeLoading(element)
-        },
-        error: function (xhr, status, error) {
-            alert('Error: ' + error + status);
-        }
     })
 }
 cleanHtml = (content) => {
@@ -6264,7 +4811,7 @@ cleanHtml = (content) => {
 
             //let googleDoc = root.find('b[id^="docs-internal-guid-"]').first()
 
-            //root.find('a').unwrap()
+            root.find('a').unwrap()
 
             root.find('*').each(function () {
 
@@ -6341,6 +4888,378 @@ cleanHtml = (content) => {
 
     }
 }
+$(document).ready(function () {
+    $('.max-length').each(function () {
+        var maxLength = $(this).attr('maxlength');
+        var currentLength = $(this).val().length;
+        var counterEle = $(this).siblings('.counter');
+        counterEle.text(currentLength + '/' + maxLength);
+    });
+    $('.max-length').on('input', function () {
+        var maxLength = $(this).attr('maxlength');
+        var currentLength = $(this).val().length;
+        var counterEle = $(this).siblings('.counter');
+        counterEle.text(currentLength + '/' + maxLength);
+    });
+});
+
+function selectAllRow() {
+    var chkActionIds = '';
+    $('.main-table>tbody>tr').each(function (index) {
+
+        var chk = $(this).find('.form-check-input:first')
+
+        if (chk.prop('disabled') == false) {
+
+            $(chk).prop('checked', $(event.target).is(":checked"))
+
+            if ($(event.target).is(":checked")) {
+
+                if (chkActionIds.length > 0) chkActionIds += ','
+
+                chkActionIds += $(chk).attr('value')
+
+            }
+        }
+    });
+
+    if (chkActionIds.trim().length > 0) {
+
+        $('.ChkActionIds').attr('value', chkActionIds)
+
+        $('.bulk-select-actions').removeClass('d-none')
+
+    } else {
+        $('.bulk-select-actions').addClass('d-none')
+    }
+}
+
+function selectRow() {
+    var allChecked = true;
+    var hasCheck = false;
+    var chkActionIds = '';
+    $('.main-table>tbody>tr').each(function (index) {
+        var chk = $(this).find('.form-check-input:first');
+        if (!chk.is(":checked")) {
+            allChecked = false;
+        }
+        else {
+            hasCheck = true;
+            if (chkActionIds.length > 0) chkActionIds += ',';
+            chkActionIds += $(chk).attr('value');
+        }
+    });
+    $('.ChkActionIds').attr('value', chkActionIds);
+    if (hasCheck) {
+        $('.bulk-select-actions').removeClass('d-none');
+    }
+    else {
+        $('.bulk-select-actions').addClass('d-none');
+    }
+    if (allChecked) {
+        $('.main-table>thead>tr').each(function (index) {
+            var chk = $(this).find('.form-check-input:first');
+            if (chk) {
+                chk.prop('checked', true);
+            }
+        });
+    }
+    else {
+        $('.main-table>thead>tr').each(function (index) {
+            var chk = $(this).find('.form-check-input:first');
+            if (chk) {
+                chk.prop('checked', false);
+            }
+        });
+    }
+}
+function selectAllRowModal() {
+    var chkActionIds = '';
+    $('.table-modal>tbody>tr').each(function (index) {
+
+        var chk = $(this).find('.form-check-input:first')
+
+        if (chk.prop('disabled') == false) {
+
+            $(chk).prop('checked', $(event.target).is(":checked"))
+
+            if ($(event.target).is(":checked")) {
+
+                if (chkActionIds.length > 0) chkActionIds += ','
+
+                chkActionIds += $(chk).attr('value')
+
+            }
+        }
+    });
+    if (chkActionIds.trim().length > 0) {
+
+        $('.modalChkActionIds').attr('value', chkActionIds)
+
+        $('.bulk-select-actions-modal').removeClass('d-none')
+
+    } else {
+        $('.bulk-select-actions-modal').addClass('d-none')
+    }
+}
+$(document).on('change', 'input[name*="hideElement"]', function () {
+    var elementShow = $(this).data('show');
+    var elementHide = $(this).data('hide');
+    var selectboxHide = $(elementHide).find('select')
+    var selectboxShow = $(elementShow).find('select')
+    if ($(this).is(":checked")) {
+        $(elementShow).removeClass('d-none');
+        $(elementHide).addClass('d-none');
+    } else {
+        $(elementShow).addClass('d-none');
+        $(elementHide).removeClass('d-none');
+    }
+    if ($(elementShow).hasClass('d-none')) {
+        console.log(1, selectboxShow)
+        if (selectboxShow) {
+            selectboxShow.attr('disabled', 'disabled')
+        }
+    }
+    else {
+        selectboxShow.removeAttr('disabled')
+    }
+    if ($(elementHide).hasClass('d-none')) {
+        console.log(2, selectboxHide)
+        if (selectboxHide) {
+            selectboxHide.attr('disabled', 'disabled')
+        }
+    }
+    else {
+        selectboxHide.removeAttr('disabled')
+    }
+})
+$(document).on('mouseover', '.show-prop', function (e) {
+    var id = $(this).attr('data-id');
+
+    if ($('#doc_' + id).html() == null || $('#doc_' + id).html().length <= 0) {
+        var isapi = $(this).attr('data-isapi') || false;
+        var siteidapi = $(this).attr('data-siteidapi') || 0;
+        var query = { id: parseInt(id.split('_')[0].replace(/\D/g, "")), isapi: isapi, siteidapi: siteidapi };
+        $.ajax({
+            url: "/BongDa24hDocs/Docs/Index?handler=DocProperties",
+            type: "GET",
+            contentType: 'application/json',
+            dataType: "html",
+            data: query,
+            success: function (response) {
+                if (response) {
+                    var html = `<div class="div1-custom-hover"></div><div class="d-flex" onclick="event.stopPropagation()">`;
+                    html += response;
+                    html += '</div>'
+                    $('#doc_' + id).addClass('card card-bg');
+                    $('#doc_' + id).html(html)
+                }
+            },
+            error: function (xhr, status, error) {
+                toastMessage(false, "Vui lòng thử lại");
+            }
+        })
+    }
+    $(e.target).css('text-decoration', 'none');
+    if (e?.fromElement?.classList.contains('custom-hover')) return
+    let eleTarget = e.currentTarget
+    let bound = eleTarget.getBoundingClientRect()
+    let eleHover = e.currentTarget.nextElementSibling
+    var elementItem = document.getElementById('div_' + id)
+    var boundEleItem = elementItem.getBoundingClientRect()
+    if (!eleHover) return
+    eleHover.style.bottom = 'auto'
+    eleHover.style.right = 'auto'
+    eleHover.style.left = boundEleItem.right + 'px';
+    eleHover.style.top = bound.y + 'px';
+
+    let div1 = eleHover.getElementsByClassName('div1-custom-hover')[0]
+    if (div1) {
+        var heightdiv1 = $(this).height() + 20;
+        if (heightdiv1 < 50) {
+            heightdiv1 = 50
+        }
+        div1.style.height = heightdiv1 + 'px'
+        div1.style.width = '40px'
+        div1.style.right = (window.innerWidth - boundEleItem.right - 20) + 'px';
+        div1.style.left = 'auto';
+        // div1.style.top = boundEleItem.top + 'px';
+    }
+    let boundEleH = eleHover.getBoundingClientRect()
+    if (boundEleH.right >= (window.innerWidth || document.documentElement.clientHeightWidth)) {
+        eleHover.style.right = (window.innerWidth - boundEleItem.left - 20) + 'px';
+        eleHover.style.left = 'auto'
+        if (div1) {
+            div1.style.right = 'auto';
+            div1.style.left = boundEleItem.left + 'px'
+        }
+
+    }
+    if (boundEleH.bottom >= (window.innerHeight || document.documentElement.clientHeight)) {
+        eleHover.style.bottom = '20px'
+        eleHover.style.top = 'auto'
+    }
+
+})
+$(document).on('mouseover', '.show-prop-2', function (e) {
+    var id = $(this).attr('data-id');
+    $(e.target).css('text-decoration', 'none');
+    if (e?.fromElement?.classList.contains('custom-hover')) return;
+
+    let eleTarget = e.currentTarget;
+    let bound = eleTarget.getBoundingClientRect();
+    let eleHover = e.currentTarget.nextElementSibling;
+    var elementItem = document.getElementById('div_' + id);
+    var boundEleItem = elementItem.getBoundingClientRect();
+
+    if (!eleHover) return;
+    eleHover.style.bottom = 'auto';
+    eleHover.style.right = 'auto';
+    if (bound.bottom + eleHover.offsetHeight < window.innerHeight) {
+        eleHover.style.top = bound.bottom + 'px';
+    } else {
+        eleHover.style.top = (bound.top - eleHover.offsetHeight) + 'px';
+    }
+
+    eleHover.style.left = bound.left + 'px';
+
+    let div1 = eleHover.getElementsByClassName('div1-custom-hover')[0];
+    if (div1) {
+        var heightdiv1 = $(this).height() + 20;
+        if (heightdiv1 < 50) {
+            heightdiv1 = 50;
+        }
+        div1.style.height = heightdiv1 + 'px';
+        div1.style.width = '40px';
+        div1.style.right = (window.innerWidth - boundEleItem.right - 20) + 'px';
+        div1.style.left = 'auto';
+    }
+
+    let boundEleH = eleHover.getBoundingClientRect();
+    if (boundEleH.right >= (window.innerWidth || document.documentElement.clientWidth)) {
+        eleHover.style.right = (window.innerWidth - boundEleItem.left - 20) + 'px';
+        eleHover.style.left = 'auto';
+        if (div1) {
+            div1.style.right = 'auto';
+            div1.style.left = boundEleItem.left + 'px';
+        }
+    }
+
+    if (boundEleH.bottom >= (window.innerHeight || document.documentElement.clientHeight)) {
+        eleHover.style.bottom = '20px';
+        eleHover.style.top = 'auto';
+    }
+    if (boundEleH.left <= bound.right) {
+        eleHover.style.left = boundEleItem.left + 'px';
+        eleHover.style.right = 'auto';
+    }
+});
+
+function selectRowModal() {
+    var allChecked = true;
+    var hasCheck = false;
+    var chkActionIds = '';
+    $('.table-modal>tbody>tr').each(function (index) {
+        var chk = $(this).find('.form-check-input:first');
+        if (!chk.is(":checked")) {
+            allChecked = false;
+        }
+        else {
+            hasCheck = true;
+            if (chkActionIds.length > 0) chkActionIds += ',';
+            chkActionIds += $(chk).attr('value');
+        }
+    });
+    $('.modalChkActionIds').attr('value', chkActionIds);
+    if (hasCheck) {
+        $('.bulk-select-actions-modal').removeClass('d-none');
+    }
+    else {
+        $('.bulk-select-actions-modal').addClass('d-none');
+    }
+
+    if (allChecked) {
+        $('.table-modal>thead>tr').each(function (index) {
+            var chk = $(this).find('.form-check-input:first');
+            if (chk) {
+                chk.prop('checked', true);
+            }
+        });
+    }
+    else {
+        $('.table-modal>thead>tr').each(function (index) {
+            var chk = $(this).find('.form-check-input:first');
+            if (chk) {
+                chk.prop('checked', false);
+            }
+        });
+    }
+}
+function removeSignatureForURL(str) {
+    if (str == '') {
+        return str;
+    }
+    var input = removerSignature(str);
+    input = input.replaceAll("?", "").replaceAll("&", "").replaceAll("\"", "").replaceAll("'", "");
+    input = input.replaceAll(".", "").replaceAll(",", "").replaceAll(";", "");
+    input = input.replaceAll("@", "").replaceAll("$", "").replaceAll("%", "").replaceAll("*", "");
+    input = input.replaceAll("~", "").replaceAll("\\", "").replaceAll("/", "").replaceAll("!", "");
+    input = input.replaceAll(":", "").replaceAll(")", "").replaceAll("(", "").replaceAll("+", "");
+    input = input.replaceAll("`", "").replaceAll("|", "");
+    while (input == "  ") {
+        input = input.replaceAll("  ", " ");
+    }
+    input = input.replaceAll(" ", "-");
+    return input;
+}
+
+function searchDocRelate(e) {
+    var self = $(e),
+        url = self.data('url');
+    var relateType = $('.select-relatetype').find(":selected").val();
+    var reviewStatusId = parseInt($('.select-review').val());
+    var docIdentity = $('.search-docidentity').val();
+    var query = {
+        relateTypeId: relateType.toString(),
+        reviewStatusId: reviewStatusId,
+        docIdentity: docIdentity
+    }
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        contentType: 'application/json',
+        dataType: "html",
+        data: query,
+        success: function (response) {
+            if (response) {
+
+                $("#tblDocRelate").html(response);
+            }
+        },
+        error: function (xhr, status, error) {
+            toastMessage(false, "Vui lòng thử lại");
+        }
+    })
+
+}
+
+function removerSignature(str) {
+    if (str == '') {
+        return str;
+    }
+    str = str.toLowerCase();
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, "");
+    str = str.replace(/\u02C6|\u0306|\u031B/g, "");
+    return str;
+}
 
 bindUrlWithUtm = (inputUrl, utmQueryParamValue) => {
     if (inputUrl != null && inputUrl.length > 0 && $(inputUrl).length) {
@@ -6356,7 +5275,6 @@ bindUrlWithUtm = (inputUrl, utmQueryParamValue) => {
         ipUrl.val(url);
     }
 }
-
 function removeQueryParam(url, keyToRemove) {
     var urlParts = url.split('?');
 
@@ -6380,124 +5298,130 @@ function removeQueryParam(url, keyToRemove) {
 
     return updatedUrl;
 }
-selectMedia = async (element) => {
-
-    const { modalid: modalId, mediatypeid: mediaTypeId, mediapath: mediaPath, medianame: mediaName } = element.dataset
-    if (typeof mediaPath == 'undefined' || mediaPath.trim().length <= 0) {
-        return
+function onGetByCheckBox(e) {
+    var self = $(e), url = self.data('ajax-url'), elementId = self.data('success-id');
+    var ckReviewStatus = selectReview();
+    var query = {
+        ReviewStatusIds: ckReviewStatus
     }
-    if (modalId) {
-        modalMedia = $(`#modalDataPopup_${modalId}`)
-    }
-    else {
-        modalMedia = $(`#modalDataPopup`)
-    }
-
-    if (modalMedia.length > 0) {
-
-        modalMedia.modal('hide')
-
-        let mediaKey = modalMedia.attr('data-key') || ''
-
-        if (mediaKey.trim().length > 0) {
-            if (mediaKey.includes('key_cke_')) {
-                $(`.${mediaKey}`).find('input').val(mediaPath)
-                $($(`.${mediaKey}`).find('input')[0]).focus().blur()
-                $(`.${mediaKey}.alt-input`).find('input').val(mediaName)
+    console.log(self, ckReviewStatus);
+    if (url) {
+        $.ajax({
+            url: url,
+            type: "GET",
+            contentType: 'application/json',
+            dataType: "html",
+            data: query,
+            success: function (response) {
+                if (response) {
+                    $(elementId).html(response);
+                    $("#Query_ReviewStatusIds").val(ckReviewStatus)
+                }
+            },
+            error: function (xhr, status, error) {
+                toastMessage(false, "Vui lòng thử lại");
             }
-            else {
-                const selectMediaInput = $(`#SelectMediaInput${mediaKey}`),
-                    mediaControl = $(`#SelectMediaView${mediaKey}`)
+        })
+    }
+}
+function selectReview() {
+    var chkActionIds = '';
+    var checkbox = $('.checkReviewIds')
+    checkbox.each(function () {
+        if ($(this).is(":checked")) {
+            if (chkActionIds.length > 0) chkActionIds += ',';
+            chkActionIds += $(this).attr('value');
+        }
+    })
+    return chkActionIds;
+}
+function removeFile(element, id) {
+    const self = $(element),
+        parent = self.closest('.row')
 
-                if (selectMediaInput.length > 0) {
-
-                    selectMediaInput.val(mediaPath)
-
-                    mediaControl.attr('src', mediaPath)
+    if (parent) {
+        let buttons = {
+            'confirm': {
+                text: "Đồng ý",
+                btnClass: 'btn btn-danger',
+                keys: ['enter'],
+                action: function () {
+                    fetchData({
+                        url: '/BongDa24hDocs/DocFiles/Index?handler=Delete',
+                        type: 'POST',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                        },
+                        dataType: 'json',
+                        data: { 'id': id },
+                    }).then(response => {
+                        if (response && response.Succeeded) {
+                            parent.remove()
+                        }
+                        toastMessage(response.Succeeded, response.Messages.join('<br />'));
+                    })
                 }
             }
         }
+
+        showMessage({
+            title: 'Xác nhận bỏ dữ liệu đã chọn ?',
+            icon: 'fa fa-question-circle',
+            columnClass: 'col-md-6 col-md-offset-3',
+            message: 'Dữ liệu đã xóa sẽ không thể phục hồi !',
+            buttons
+        })
     }
+
+    return false
 }
-$(document).on('change', 'input[name*="hideElement"]', function () {
-    var elementShow = $(this).data('show');
-    var elementHide = $(this).data('hide');
-    var selectboxHide = $(elementHide).find('select')
-    var selectboxShow = $(elementShow).find('select')
-    if ($(this).is(":checked")) {
-        $(elementShow).removeClass('d-none');
-        $(elementHide).addClass('d-none');
-    } else {
-        $(elementShow).addClass('d-none');
-        $(elementHide).removeClass('d-none');
-    }
-    if ($(elementShow).hasClass('d-none')) {
-        //console.log(1, selectboxShow)
-        if (selectboxShow) {
-            selectboxShow.attr('disabled', 'disabled')
-        }
-    }
-    else {
-        selectboxShow.removeAttr('disabled')
-    }
-    if ($(elementHide).hasClass('d-none')) {
-        //console.log(2, selectboxHide)
-        if (selectboxHide) {
-            selectboxHide.attr('disabled', 'disabled')
-        }
-    }
-    else {
-        selectboxHide.removeAttr('disabled')
-    }
-})
-$(document).on('change', 'table .row-checkbox', function () {
-    let table = $(this).closest('table')
-    selectRowRelate(table)
-})
-selectRowRelate = table => {
-    let anyChecked = false, checkedIds = [], hiddenInput = table.find('input[name="ChkActionIds"]').first()
-    table.find('.row-checkbox').each(function () {
-        if ($(this).prop('checked')) {
-            anyChecked = true
-            checkedIds.push($(this).val())
-        }
-    })
-
-    hiddenInput.val(checkedIds.join(','))
-
-    let bulkActions = table.find('.bulk-select-actions').first()
-    if (anyChecked) {
-        bulkActions.removeClass('d-none')
-    } else {
-        bulkActions.addClass('d-none')
-    }
-
-    updateSelectAllCheckbox(table)
+function showMoreSites(e) {
+    $(e).parents('div').next('.more-site').removeClass("d-none")
+    $(e).addClass('d-none')
 }
-updateSelectAllCheckbox = table => {
-    let selectAllCheckbox = table.find('thead input[class*="form-check-input"]'), checkboxes = table.find('.row-checkbox'),
-        allChecked = true, anyChecked = false
+function HideMoreSites(e) {
+    $(e).parents('div.more-site').addClass("d-none")
+    $(e).parents('div.more-site').prev('.current-site').find(".show-more").removeClass("d-none")
+}
+function removeFaqFile(element, id) {
+    const self = $(element),
+        parent = self.closest('.row')
 
-    checkboxes.each(function () {
-        if (!$(this).prop('checked')) {
-            allChecked = false
-        } else {
-            anyChecked = true
+    if (parent) {
+        let buttons = {
+            'confirm': {
+                text: "Đồng ý",
+                btnClass: 'btn btn-danger',
+                keys: ['enter'],
+                action: function () {
+                    fetchData({
+                        url: '/BongDa24hDocs/Faqs/Index?handler=DeleteFaqFile',
+                        type: 'POST',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader('RequestVerificationToken', $('input:hidden[name="__RequestVerificationToken"]').val())
+                        },
+                        dataType: 'json',
+                        data: { 'id': id },
+                    }).then(response => {
+                        if (response && response.Succeeded) {
+                            parent.remove()
+                        }
+                        toastMessage(response.Succeeded, response.Messages.join('<br />'));
+                    })
+                }
+            }
         }
-    })
-    if (checkboxes.length == 0) {
-        allChecked = false
+
+        showMessage({
+            title: 'Xác nhận bỏ dữ liệu đã chọn ?',
+            icon: 'fa fa-question-circle',
+            columnClass: 'col-md-6 col-md-offset-3',
+            message: 'Dữ liệu đã xóa sẽ không thể phục hồi !',
+            buttons
+        })
     }
-    if (allChecked) {
-        selectAllCheckbox.prop('checked', true)
-        selectAllCheckbox.prop('indeterminate', false)
-    } else if (anyChecked) {
-        selectAllCheckbox.prop('checked', false)
-        selectAllCheckbox.prop('indeterminate', true)
-    } else {
-        selectAllCheckbox.prop('checked', false)
-        selectAllCheckbox.prop('indeterminate', false)
-    }
+
+    return false
 }
 function toggleEditMode(id) {
     var displayElement = document.getElementById('display-' + id);
@@ -6515,552 +5439,3 @@ function toggleEditMode(id) {
     container.classList.toggle('edit-mode');
     // container.closest('tr').classList.toggle('editing');
 }
-onUploadDocsFileSuccessed = (element, xhr) => {
-    try {
-        removeLoading(element);
-        const btnUpFile = $('.btn-up-docfile');
-        if (btnUpFile.length) {
-            removeLoading(btnUpFile);
-            console.log(123, btnUpFile)
-        }
-        var btnUpFileTextbox = $('.btn-up-file-to-textbox');
-        if (btnUpFileTextbox.length) {
-            removeLoading(btnUpFileTextbox);
-        }
-        if (xhr.responseJSON.Messages) {
-            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages.join('<br />'))
-        }
-
-        if (xhr.responseJSON.Data != null) {
-            for (var i = 0; i < xhr.responseJSON.Data.length; i++) {
-                let isExist = mediaSelected.filter(x => x.id && x.id == xhr.responseJSON.Data[i].id)
-
-                if (isExist.length == 0) {
-                    mediaSelected.push({
-                        id: xhr.responseJSON.Data[i].id,
-                        name: xhr.responseJSON.Data[i].name,
-                        path: xhr.responseJSON.Data[i].path
-                    })
-                }
-            }
-        }
-
-        const getBlockDataButton = $('.media-search').first()
-
-        if (getBlockDataButton) {
-            $(getBlockDataButton).trigger('click')
-        }
-        //refresh
-        var dataType, fileTypeId, dataId, elementResultId;
-
-        if ($('#createFileCommand_DocId').length) {
-            dataId = $('#createFileCommand_DocId').val();
-        }
-        if ($('#fcreateFileCommand_ElementResultId').length) {
-            elementResultId = $('#createFileCommand_ElementResultId').val();
-        }
-        if (dataId != undefined) {
-            //Nếu là box uploadfile
-            removeLoading(element);
-            if (elementResultId != undefined && elementResultId.length && $('#' + elementResultId).length) {
-                var filePath = xhr.responseJSON.Data[0].FilePath;
-                $('#' + elementResultId).val(filePath);
-                if ($('#' + elementResultId + '_Preview').length) {
-                    $('#' + elementResultId + '_Preview').attr('src', filePath);
-                }
-            }
-            else //bảng danh sách file
-            {
-                var idTable = 'table_'/* + dataType + "_" */ + dataId;
-                var table = $('#' + idTable);
-                if (table.length) {
-                    var url = table.attr('data-ajax-url');
-                    if (url != null) {
-                        fetchData({
-                            type: 'GET',
-                            url: url,
-                            dataType: 'html'
-                        }).then(response => {
-                            $(table).html(response);
-                        })
-                    }
-                }
-            }
-        }
-
-    } catch (e) {
-        console.log(e)
-    }
-}
-
-function importDocContent(element) {
-    const target = $(element);
-    const url = target.data('url');
-    const docId = target.data('value');
-
-    $.ajax({
-        url: url,
-        type: 'GET',
-        data: { docId: docId },
-        dataType: 'json',
-        beforeSend: () => {
-            target.attr('disabled', 'disabled').data('og', target.html());
-
-            if (target.hasClass('cke_element')) {
-                target.html('<span style="padding: 0 5px;">Vui lòng đợi...</span>');
-            } else if (target.hasClass('cke_button')) {
-                target.html('<span style="padding: 0 2px;">...</span>');
-            } else {
-                target.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-            }
-        },
-        success: (response) => {
-            if (response.Data) {
-                for (let key in CKEDITOR.instances) {
-                    CKEDITOR.instances[key].insertHtml(response.Data);
-                    CKEDITOR.instances[key].updateElement();
-                }
-            } else if (response.Messages) {
-                toastMessage(response.Succeeded, response.Messages.join('<br />'));
-                removeLoading(element);
-                return;
-            }
-            $('#doc_content').trigger('submit');
-            removeLoading(element);
-
-        },
-        error: function (xhr, status, error) {
-            alert('Error: ' + error + ' - ' + status);
-        }
-
-    });
-}
-//function WorkflowResultToDoc(element) {
-//    $('#Command_IsWorkflowResultToDoc').val(true);
-//    $('#Command_AddMoreData').val(false);
-//    $('#doc_summary').trigger('submit');
-//}
-
-onDocContentSuccessed = (form, xhr) => {
-    try {
-        elementAction = form
-
-        if (xhr.responseJSON.Succeeded) {
-            removeLoading(form)
-        }
-
-        if (xhr.responseJSON.Messages) {
-            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages)
-        }
-
-
-    } catch (e) {
-        console.log(e)
-    }
-}
-
-$(document).on('change', '.select2-auto-complete-modal', (e) => {
-    var self = $(e.target), parent = self.closest('.did-floating-label-content'), value = self.val();
-    var validate = parent.find('.text-danger');
-    if (validate.length > 0) {
-        if (value > 0) {
-            validate.addClass('text-danger d-none')
-        }
-        else {
-            validate.removeClass('d-none')
-
-        }
-    }
-})
-$(document).on('change', 'table thead input[class*="form-check-input"]', function () {
-    let table = $(this).closest('table'),
-        isChecked = $(this).prop('checked')
-
-    table.find('.row-checkbox').prop('checked', isChecked)
-    selectRowRelate(table)
-})
-//onDocContentSuccessed = (form, xhr) => {
-//    try {
-//        if (!xhr.responseJSON.Succeeded) {
-//            removeLoading(form);
-//        }
-
-//        if (xhr.responseJSON.Messages) {
-//            toastMessage(xhr.responseJSON.Succeeded, xhr.responseJSON.Messages);
-//        }
-
-//        if (xhr.responseJSON.Succeeded) {
-//            let docId = form.querySelector("#Command_DocId")?.value;
-//            let formUrl = form.getAttribute('data-ajax-url') + "?docId=" + docId;
-
-//            if (formUrl != null) {
-//                fetchData({
-//                    type: 'GET',
-//                    url: formUrl,
-//                    dataType: 'html'
-//                }).then(response => {
-//                    let parsedHtml = $('<div>').append($.parseHTML(response));
-//                    let newContent = parsedHtml.find("#doc_content").html();
-
-//                    if (newContent) {
-//                        $("#doc_content").html(newContent);
-//                    } else {
-//                        $("#doc_content").html(response);
-//                    }
-//                    $("#FormFiles").val("");
-
-//                    setTimeout(() => {
-//                        $("#doc_content textarea").each(function () {
-//                            let editorId = $(this).attr("id");
-
-//                            if (editorId) {
-//                                if (CKEDITOR.instances[editorId]) {
-//                                    CKEDITOR.instances[editorId].destroy(true);
-//                                }
-
-//                                CKEDITOR.replace(editorId, {
-//                                    allowedContent: true
-//                                });
-//                            }
-//                        });
-//                    }, 100);
-
-//                });
-
-//            }
-//        }
-
-//    } catch (e) {
-//        console.log(e);
-//    }
-//};
-CKEDITOR.on('instanceReady', function (ev) {
-    ev.editor.dataProcessor.htmlFilter.addRules({
-        elements: {
-            a: function (element) {
-                if (element.attributes.name && element.attributes.name.startsWith('bookmark')) {
-                    return false; // Loại bỏ thẻ <a> có name="bookmarkX"
-                }
-            }
-        }
-    });
-});
-$(document).on('change', 'input[type=checkbox][name*=showOrginalItem]', function () {
-    var tr = $('.table-docItem').find('tr[class*=originalItem]');
-    originId = tr.data('origin');
-    displayId = tr.data('displayid');
-    var td = tr.find('td[class*=td-content');
-    if (this.checked) {
-        tr.removeClass('d-none')
-        if (originId > 0) {
-            td.addClass('item-selected')
-        }
-        if (displayId != 2) {
-            td.addClass('bg-original')
-        }
-    }
-    else {
-        if (originId > 0) {
-            tr.addClass('d-none')
-        }
-        td.removeClass('item-selected')
-        td.removeClass('bg-original')
-    }
-})
-$('.form-select-search').change(function () {
-    var formData = $('#form_create').serialize();
-    $.ajax({
-        url: '/LuatVietNamDoc/Docs/Create?handler=Session',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            location.reload();
-        },
-        error: function (xhr, status, error) {
-            console.error("Error submitting form:", error);
-        }
-    });
-});
-$('.form-select-searchEdit').change(function () {
-    var formData = $('#form_edit').serialize();
-    $.ajax({
-        url: '/LuatVietNamDoc/Docs/Edit?handler=Session',
-        type: 'POST',
-        data: formData,
-        success: function (response) {
-            location.reload();
-        },
-        error: function (xhr, status, error) {
-            console.error("Error submitting form:", error);
-        }
-    });
-});
-$(document).on('keyup', '.numberInput', (e) => {
-    var sanitized = AddDotToText($(e.target).val());
-    $(e.target).val(sanitized);
-    CalulateMoneyVAT();
-});
-AddDotToText = (value) => {
-    if (value === null || value === undefined) return "";
-
-    let str = String(value).trim();
-    if (!str) return "";
-
-    // Giữ dấu âm nếu có
-    let sign = '';
-    if (str[0] === '-' || str[0] === '+') {
-        if (str[0] === '-') sign = '-';
-        str = str.slice(1);
-    }
-
-    // Chỉ giữ số và dấu chấm
-    str = str.replace(/[^\d,]/g, '');
-
-    // Tách phần nguyên & thập phân
-    let [intPart, fracPart] = str.split(',') || [];
-    intPart = intPart || '0';
-
-    // Xóa số 0 thừa đầu
-    intPart = intPart.replace(/^0+(?=\d)/, '') || '0';
-
-    // Thêm dấu phẩy ngăn cách nghìn
-    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-    return sign + intPart + (fracPart ? "." + fracPart : "");
-}
-$(document).on('change', '#Command_VATPercent', function () {
-    CalulateMoneyVAT();
-})
-$(document).on('change', '#Command_CSKHOrderValueText', function () {
-    CalulateMoneyVAT();
-})
-$(document).on('change', '#Command_SalePercent', function () {
-    CalulateMoneyVAT();
-})
-$(document).on('change', '#Command_ProductParentGroupId', function () {
-    var VATPersent = $("#Command_VATPercent");
-    var salePersent = $("#Command_SalePercent");
-    var productGroup = $('input[name="Command.ProductGroupId"]').val();
-    var productGroupParent = parseInt($(this).val());
-    var id = parseInt(productGroup);
-    if (productGroup <= 0 && productGroupParent > 0) {
-        id = productGroupParent;
-    }
-    if (id > 0) {
-        $.ajax({
-            url: '/LuatVietNamCms/CSKHOrders/Index?handler=SearchProductGroupById',
-            type: 'GET',
-            data: {
-                id: id
-            },
-            success: function (response) {
-                if (response.Succeeded) {
-                    VATPersent.val(response.Data.VATPercent).prop('selected', true);
-                    salePersent.val(response.Data.SalePercent);
-                    CalulateMoneyVAT();
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error("Error submitting form:", error);
-            }
-        });
-    }
-
-})
-//$(document).on('change', 'input[name="Command.ProductGroupId"]', function () {
-//    var VATPersent = $("#Command_VATPercent");
-//    var salePersent = $("#Command_SalePercent");
-//    var productGroup = $(this).val();
-//    var productGroupParent = parseInt($('#Command_ProductParentGroupId').val());
-//    var id = parseInt(productGroup);
-//    if (productGroup <= 0 && productGroupParent > 0) {
-//        id = productGroupParent;
-//    }
-//    if (id > 0) {
-//        $.ajax({
-//            url: '/LuatVietNamCms/CSKHOrders/Index?handler=SearchProductGroupById',
-//            type: 'GET',
-//            data: {
-//                id: id
-//            },
-//            success: function (response) {
-//                if (response.Succeeded) {
-//                    console.log(response.Data)
-//                    VATPersent.val(response.Data.VATPercent).prop('selected', true);
-//                    salePersent.val(response.Data.SalePercent);
-//                    CalulateMoneyVAT();
-//                }
-//            },
-//            error: function (xhr, status, error) {
-//                console.error("Error submitting form:", error);
-//            }
-//        });
-//    }
-
-//})
-const formatNumberRound3 = (value) => {
-    if (value === null || value === undefined) return "";
-
-    let num = Number(value);
-    if (isNaN(num)) return "";
-
-    return num.toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-};
-CalulateMoneyVAT = () => {
-    var VATPersent = $("#Command_VATPercent");
-    var CSKHorderAmount = $("#Command_CSKHOrderAmountText");
-    var CSKHorderVAT = $("#Command_CSKHOrderVATText");
-    var CSKHOrderValue = $("#Command_CSKHOrderValueText");
-    var SaleValueText = $("#Command_SaleValueText");
-    var salePersent = $("#Command_SalePercent");
-    var VATPersentValue = parseInt(VATPersent.val());
-    var CSKHorderAmountValue = parseInt(CSKHorderAmount.val().replaceAll(".", ""));
-    var SaleValue = parseInt(SaleValueText.val().replaceAll(".", ""));
-    var salePersentValue = parseInt(salePersent.val());
-    console.log(CSKHorderAmount.val())
-    var orderValue = CSKHorderAmountValue;
-    if (CSKHorderAmountValue != undefined && CSKHorderAmountValue > 0) {
-        if (VATPersentValue > 0) {
-            orderValue = (CSKHorderAmountValue / (1 + (VATPersentValue / 100)));
-        }
-        var VATValue = CSKHorderAmountValue - orderValue
-        CSKHorderVAT.val(AddDotToText(Math.round(VATValue)))
-        CSKHOrderValue.val(AddDotToText((Math.round(orderValue))))
-    }
-
-    console.log(salePersentValue, orderValue)
-    if (orderValue > 0) {
-        SaleValueText.val(AddDotToText(Math.round((orderValue * salePersentValue) / 100)))
-    }
-}
-$(document).on('change',
-    '.block-list-tracuu input[type="checkbox"]',
-    function (e) {
-        var self = $(this),
-            docgroupIds = $('input[name="DocGroupIds"]').filter(':checked').map(function () {
-                return this.value
-            }).get(),
-            docTypeIds = $('input[name="DocTypeIds"]').filter(':checked').map(function () {
-                return this.value
-            }).get(),
-            fieldIds = $('input[name="FieldIds"]').filter(':checked').map(function () {
-                return this.value
-            }).get(),
-            effectStatusIds = $('input[name="EffectStatusIds"]').filter(':checked').map(function () {
-                return this.value
-            }).get(),
-            organIds = $('input[name="OrganIds"]').filter(':checked').map(function () {
-                return this.value
-            }).get(),
-            isueYear = $('input[name="IsueYear"]').filter(':checked').map(function () {
-                return this.value
-            }).get();
-        var valueDocGroupIds = docgroupIds.length > 0 ? docgroupIds.join(',') : ''
-        $('#Query_DocGroupIdStrings').val(valueDocGroupIds);
-        var valuedocTypeIds = docTypeIds.length > 0 ? docgroupIds.join(',') : ''
-        $('#Query_DocTypeIdStrings').val(valuedocTypeIds);
-        var valueeffectStatusIds = effectStatusIds.length > 0 ? effectStatusIds.join(',') : ''
-        $('#Query_EffectStatusIdStrings').val(valueeffectStatusIds);
-        var valueorganIds = organIds.length > 0 ? organIds.join(',') : ''
-        $('#Query_OrganIdStrings').val(valueorganIds);
-        var valueisueYear = isueYear.length > 0 ? isueYear.join(',') : ''
-        $('#Query_IsueYearString').val(valueisueYear);
-        var valueFieldIds = fieldIds.length > 0 ? fieldIds.join(',') : ''
-        $('#Query_FieldIdString').val(valueFieldIds);
-    })
-function getProductGroupChild() {
-
-}
-function checkAndOpenModal(button) {
-    const id = button.getAttribute("data-id");
-
-    fetch(`/LuatVietNamDoc/DocTemps/Edit?handler=Check&id=${id}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const url = `/LuatVietNamDoc/DocTemps/Edit?id=${id}`;
-                modalGet(button, url, "Cập file PDF và trạng thái");
-            } else {
-                toastMessage(false, data.message);
-            }
-        })
-        .catch(err => {
-            toastMessage(false, "Có lỗi xảy ra khi kiểm tra dữ liệu");
-        });
-
-    return false;
-}
-function toggleFullscreen(btn) {
-    const icon = btn.querySelector('#toggleIcon');
-    const viewer = document.getElementById('docViewerWrapper');
-    const content = document.querySelector('.contentItem');
-
-    if (!viewer || !content) return;
-
-    const isExpanded = icon.classList.contains('fa-expand');
-
-    if (isExpanded) {
-        // Đổi icon + tooltip
-        icon.classList.replace('fa-expand', 'fa-compress');
-        icon.setAttribute('title', 'Thu nhỏ');
-
-        // Ẩn viewer và mở rộng content
-        viewer.classList.add('d-none');
-        content.classList.remove('col-6');
-        content.classList.add('col-12');
-    } else {
-        // Đổi icon + tooltip
-        icon.classList.replace('fa-compress', 'fa-expand');
-        icon.setAttribute('title', 'Mở rộng');
-
-        // Hiện viewer và thu hẹp content
-        viewer.classList.remove('d-none');
-        content.classList.remove('col-12');
-        content.classList.add('col-6');
-    }
-}
-$(document).on('click', 'button[data-confirm]', function (e) {
-    var self = $(this);
-    var confirmTitle = self.data('confirm');
-    var message = self.data('message') || '';
-    var form = self.closest('form');
-
-    e.preventDefault();
-
-    let buttons = {
-        confirm: {
-            text: "Đồng ý",
-            btnClass: 'btn btn-danger',
-            keys: ['enter'],
-            action: function () {
-
-                // Đồng bộ dữ liệu CKEditor về textarea trước khi submit
-                for (let instance in CKEDITOR.instances) {
-                    CKEDITOR.instances[instance].updateElement();
-                }
-
-                form.find('input[type="hidden"][data-temp-submit]').remove();
-
-                $('<input>', {
-                    type: 'hidden',
-                    name: self.attr('name'),
-                    value: self.val(),
-                    'data-temp-submit': true
-                }).appendTo(form);
-
-                form.trigger('submit');
-            }
-        }
-    };
-
-    showMessage({
-        title: confirmTitle,
-        icon: 'fa fa-question-circle',
-        columnClass: 'col-md-6 col-md-offset-3',
-        message: message,
-        buttons: buttons
-    });
-});

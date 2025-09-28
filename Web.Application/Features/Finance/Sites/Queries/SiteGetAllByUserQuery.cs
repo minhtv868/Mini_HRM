@@ -10,7 +10,7 @@ namespace Web.Application.Features.Finance.Sites.Queries
 {
     public class SiteGetAllByUserQuery : IRequest<List<SiteGetAllByUserDto>>
     {
-        public short? UserId { get; set; }
+        public int? UserId { get; set; }
     }
     internal class SiteGetAllByUserQueryHandler : IRequestHandler<SiteGetAllByUserQuery, List<SiteGetAllByUserDto>>
     {

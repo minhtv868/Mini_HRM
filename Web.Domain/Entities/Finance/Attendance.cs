@@ -20,6 +20,7 @@ namespace Web.Domain.Entities.Finance
         // Ghi chú / trạng thái
         public string Notes { get; set; }
         public byte StatusId { get; set; }
+        public int? SiteId { get; set; }
         public int? CrUserId { get; set; }
         public DateTime? CrDateTime { get; set; }
         public int? UpdUserId { get; set; }

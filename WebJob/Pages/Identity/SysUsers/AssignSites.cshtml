@@ -1,0 +1,53 @@
+﻿@page
+@model WebJob.WebCMS.Pages.Identity.SysUsers.AssignSitesModel
+@{
+    Layout = null;
+}
+<form method="post"
+      data-ajax="true"
+      data-ajax-url="@Url.Page(pageName: "AssignSites")"
+      data-ajax-method="post"
+      data-ajax-begin="onBegin(this)"
+      data-ajax-success="onSuccessed(this, xhr)"
+      enctype="multipart/form-data">
+    <div class="modal-header">
+        <h5 class="modal-title">Danh sách site</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+    </div>
+    <div class="modal-body mt-0">
+        <div class="row gx-2 main-body">
+            <input name="UserId" value="@Model.UserId" type="hidden" />
+            <input class="ChkActionIds" type="hidden" name="ChkActionIds" />
+            @if (Model.SiteGetAllDtos != null && Model.SiteGetAllDtos.Any())
+            {
+                bool isChecked = false;
+                foreach (var item in Model.SiteGetAllDtos)
+                {
+                    isChecked = Model.SiteId.FirstOrDefault(x => x == item.SiteId) > 0;
+                    <div class="col-12 col-md-12 did-floating-label-content">
+                        <input type="checkbox" class="form-check-input" value="@item.SiteId" onchange="selectRole()" @(isChecked ? "checked" : "") />
+                        <label class="form-check-label fw-normal check-role">@item.SiteName</label>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Đóng</button>
+        <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+</form>
+<script type="text/javascript">
+    function selectRole() {
+        var chkActionIds = '';
+        $('.main-body>div').each(function (index) {
+            var chk = $(this).find('.form-check-input:first');
+            if (chk.is(":checked")) {
+                if (chkActionIds.length > 0) chkActionIds += ',';
+                chkActionIds += $(chk).attr('value');
+            }
+        });
+        $('.ChkActionIds').attr('value', chkActionIds);
+        console.log(chkActionIds)
+    }
+</script>
