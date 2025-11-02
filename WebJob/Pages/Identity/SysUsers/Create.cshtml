@@ -36,6 +36,13 @@
 				</div>
 			</div>
 			<div class="col-sm-6 mb-3 did-floating-label-content">
+				<select asp-for="Command.SiteId"
+						asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))"
+						class="form-select select-picker-modal did-floating-select">
+				</select>
+				<label asp-for="Command.SiteId" class="did-floating-label"></label>
+			</div>
+			<div class="col-sm-6 mb-3 did-floating-label-content">
 				<input asp-for="Command.UserName" asp-placeholder-for="Command.UserName" class="form-control did-floating-input" />
 				<label-required asp-for="Command.UserName" class="did-floating-label"></label-required>
 				<span asp-validation-for="Command.UserName" class="text-danger"></span>

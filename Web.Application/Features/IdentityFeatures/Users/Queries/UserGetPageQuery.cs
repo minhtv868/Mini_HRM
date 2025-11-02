@@ -25,6 +25,8 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
 
         [DisplayName("Xác thực 2 bước")]
         public byte TwoFactorEnabled { get; set; }
+        [DisplayName("Site")]
+        public int? SiteId { get; set; }
     }
 
     internal class UserGetPageQueryHandler : IRequestHandler<UserGetPageQuery, PaginatedResult<UserGetPageDto>>
@@ -108,8 +110,8 @@ namespace Web.Application.Features.IdentityFeatures.Users.Queries
             var userIdsList = result.Data.Select(x => x.Id).ToList();
             var rolesList = await _roleRepo.GetAllAsync();
             var userRolesList = await _userRoleRepo.GetByUserIdsListAsync(userIdsList);
-            var userSiteEntity = _unitOfWork.Repository<UserSite>().Entities;
-            var sites = _unitOfWork.Repository<Site>().Entities;
+            var userSiteEntity = _unitOfWork.Repository<UserSite>().Entities.Where(x => x.SiteId == queryInput.SiteId);
+            var sites = _unitOfWork.Repository<Site>().Entities.Where(x => x.SiteId == queryInput.SiteId);
             foreach (var item in result.Data)
             {
                 var rolesByUser = (from r in rolesList

@@ -2,7 +2,6 @@
 using Web.Application.Features.Finance.Departments.Commands;
 using Web.Application.Features.Finance.Departments.DTOs;
 using Web.Application.Features.Finance.Departments.Queries;
-using Web.Application.Features.Finance.Sites.DTOs;
 using Web.Application.Features.Finance.Sites.Queries;
 using Web.Shared;
 using WebJob.Helpers.Configs;
@@ -15,7 +14,6 @@ namespace WebJob.Pages.Finance.Departments
         [BindProperty]
         public DepartmentGetPageQuery Query { get; set; }
         public PaginatedResult<DepartmentGetPageDto> PaginatedResult;
-        public List<SiteGetAllByUserDto> SiteList;
         private readonly int _pageSize = AppConfig.AppSettings.PageSize;
         public async Task<IActionResult> OnGet(DepartmentGetPageQuery query, [FromQuery] int page = 1)
         {
@@ -23,18 +21,7 @@ namespace WebJob.Pages.Finance.Departments
             Query.Page = page;
             Query.PageSize = _pageSize;
             SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
-            if (SiteList?.Any() == true)
-            {
-                if (!Query.SiteId.HasValue || Query.SiteId <= 0)
-                {
-                    Query.SiteId = (HttpContext.Session.GetInt32("SiteId"))
-                                   ?? SiteList.First().SiteId;
-                }
-                else
-                {
-                    HttpContext.Session.SetInt32("SiteId", Query.SiteId.Value);
-                }
-            }
+            Query.SiteId ??= await GetOrSetSiteIdAsync();
             PaginatedResult = await Mediator.Send(query);
             PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
             return Page();
@@ -42,10 +29,7 @@ namespace WebJob.Pages.Finance.Departments
         public async Task<IActionResult> OnGetBindDataAsync(DepartmentGetPageQuery query, [FromQuery] int page = 1)
         {
             SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
-            var siteId = HttpContext.Session.GetInt32("SiteId");
-            query.SiteId ??= siteId > 0
-                ? siteId
-                : SiteList?.FirstOrDefault()?.SiteId;
+            Query.SiteId ??= await GetOrSetSiteIdAsync();
             query.Page = page;
 
             query.PageSize = _pageSize;

@@ -1,26 +1,29 @@
-﻿using Web.Application.Features.IdentityFeatures.Users.Commands;
+﻿using Microsoft.AspNetCore.Mvc;
+using Web.Application.Features.Finance.Sites.Queries;
+using Web.Application.Features.IdentityFeatures.Users.Commands;
 using Web.Application.Features.IdentityFeatures.Users.Queries;
 using Web.Shared;
 using WebJob.Helpers.Configs;
 using WebJob.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace WebJob.Pages.Identity.Users
 {
-	public class IndexModel : BasePageModel
+    public class IndexModel : BasePageModel
     {
         [BindProperty]
         public UserGetPageQuery Query { get; set; }
 
         public PaginatedResult<UserGetPageDto> PaginatedResult;
 
-		private readonly int _pageSize = AppConfig.AppSettings.PageSize;
+        private readonly int _pageSize = AppConfig.AppSettings.PageSize;
 
         public async Task<IActionResult> OnGetAsync(UserGetPageQuery query, [FromQuery] int page = 1)
         {
             Query = query;
             Query.Page = page;
             Query.PageSize = _pageSize;
+            Query.SiteId ??= await GetOrSetSiteIdAsync();
+            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
 
             PaginatedResult = await Mediator.Send(Query);
 
@@ -59,20 +62,21 @@ namespace WebJob.Pages.Identity.Users
                     Succeeded = false,
                     Messages = new List<string> { "Vui lòng chọn tài khoản cần thao tác." }
                 };
-            };
+            }
+            ;
 
             var selectedUserIds = chkActionIds?.Split(',')?.Select(int.Parse)?.ToList();
 
             foreach (int id in selectedUserIds)
             {
-                if(Query.IsEnabled > 0)
+                if (Query.IsEnabled > 0)
                 {
                     await Mediator.Send(new UserSetIsEnableCommand { Id = id, IsEnable = Query.IsEnabled == 1 });
-				}
-				else if(Query.TwoFactorEnabled > 0)
+                }
+                else if (Query.TwoFactorEnabled > 0)
                 {
-					await Mediator.Send(new UserSetTwoFactorEnabledCommand { Id = id, TwoFactorEnabled = Query.TwoFactorEnabled == 1 });
-				}
+                    await Mediator.Send(new UserSetTwoFactorEnabledCommand { Id = id, TwoFactorEnabled = Query.TwoFactorEnabled == 1 });
+                }
             }
 
             return new AjaxResult
@@ -84,14 +88,19 @@ namespace WebJob.Pages.Identity.Users
 
         public async Task<IActionResult> OnGetBindDataAsync(UserGetPageQuery query, [FromQuery] int page = 1)
         {
+            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
+            var siteId = HttpContext.Session.GetInt32("SiteId");
+            query.SiteId ??= siteId > 0
+                ? siteId
+                : SiteList?.FirstOrDefault()?.SiteId;
             query.Page = page;
             query.PageSize = _pageSize;
 
-			PaginatedResult = await Mediator.Send(query);
+            PaginatedResult = await Mediator.Send(query);
 
-			PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
+            PagingInput = new PagingInput(query.Page, query.PageSize, PaginatedResult.TotalPages);
 
-			return Partial("BindData", Tuple.Create(PaginatedResult, PagingInput));
+            return Partial("BindData", Tuple.Create(PaginatedResult, PagingInput, query.SiteId));
         }
     }
 }

@@ -7,10 +7,11 @@
 			<div class="row gx-2 align-items-center mt-3">
 				  <div class="col-12 mb-4 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">
                     <select asp-for="Query.SiteId" asp-items="@(new SelectList(Model.SiteList, "SiteId", "SiteName"))"
-                            class="form-select form-select-submit did-floating-select"
+							class="form-select select-picker form-select-submit did-floating-select"
                             onclick="this.setAttribute('value', this.value); return false;"
                             onchange="this.setAttribute('value', this.value); return false;">
                     </select>
+
                     <label asp-for="Query.SiteId" class="did-floating-label"></label>
                 </div>
 				<div class="col-12 mb-4 col-md-6 col-lg-4 col-xl-2 did-floating-label-content">

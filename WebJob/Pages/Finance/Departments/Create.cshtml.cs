@@ -1,7 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Web.Application.Features.Finance.Departments.Commands;
-using Web.Application.Features.Finance.Sites.DTOs;
 using Web.Application.Features.Finance.Sites.Queries;
 using WebJob.Models;
 
@@ -10,7 +9,6 @@ namespace WebJob.Pages.Finance.Departments
     public class CreateModel : BasePageModel
     {
         private readonly IValidator<DepartmentCreateCommand> _validator;
-        public List<SiteGetAllByUserDto> SiteList;
         public CreateModel(IValidator<DepartmentCreateCommand> validator)
         {
             _validator = validator;
@@ -18,11 +16,10 @@ namespace WebJob.Pages.Finance.Departments
 
         [BindProperty]
         public new DepartmentCreateCommand Command { get; set; }
-        public async Task<IActionResult> OnGet(int siteId)
+        public async Task<IActionResult> OnGet()
         {
             Command = new DepartmentCreateCommand();
             SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
-            Command.SiteId = siteId;
             return Page();
         }
 

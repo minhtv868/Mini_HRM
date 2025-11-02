@@ -1,54 +1,57 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
+using Web.Application.Features.Finance.Sites.Queries;
 using Web.Application.Features.IdentityFeatures.Roles.Queries;
 using Web.Application.Features.IdentityFeatures.Users.Commands;
 using WebJob.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace WebJob.Pages.Identity.Users
 {
-	public class CreateModel : BasePageModel
-	{
-		private IValidator<UserCreateCommand> _validator;
-		public CreateModel(IValidator<UserCreateCommand> validator)
-		{
-			_validator = validator;
-		}
+    public class CreateModel : BasePageModel
+    {
+        private IValidator<UserCreateCommand> _validator;
+        public CreateModel(IValidator<UserCreateCommand> validator)
+        {
+            _validator = validator;
+        }
 
-		[BindProperty]
-		public new UserCreateCommand Command { get; set; }
+        [BindProperty]
+        public new UserCreateCommand Command { get; set; }
 
-		public IEnumerable<RoleGetAllDto> AllRolesList;
+        public IEnumerable<RoleGetAllDto> AllRolesList;
 
-		public async Task<IActionResult> OnGetAsync()
-		{
-			var allRolesList = await Mediator.Send(new RoleGetAllQuery());
+        public async Task<IActionResult> OnGetAsync()
+        {
+            SiteList = await Mediator.Send(new SiteGetAllByUserQuery());
 
-			AllRolesList = allRolesList.Data;
+            var allRolesList = await Mediator.Send(new RoleGetAllQuery());
 
-			return Page();
-		}
+            AllRolesList = allRolesList.Data;
 
-		public async Task<IActionResult> OnPostAsync()
-		{
-			var resultValidator = await _validator.ValidateAsync(Command);
+            return Page();
+        }
 
-			if (!resultValidator.IsValid)
-			{
-				return new AjaxResult
-				{
-					Succeeded = false,
-					Messages = resultValidator.Errors.Select(x => x.ErrorMessage).ToList()
-				};
-			}
+        public async Task<IActionResult> OnPostAsync()
+        {
+            var resultValidator = await _validator.ValidateAsync(Command);
 
-			var userInsertResult = await Mediator.Send(Command);
+            if (!resultValidator.IsValid)
+            {
+                return new AjaxResult
+                {
+                    Succeeded = false,
+                    Messages = resultValidator.Errors.Select(x => x.ErrorMessage).ToList()
+                };
+            }
 
-			return new AjaxResult
-			{
-				Id = userInsertResult.Data.ToString(),
-				Succeeded = userInsertResult.Succeeded,
-				Messages = userInsertResult.Messages
-			};
-		}
-	}
+            var userInsertResult = await Mediator.Send(Command);
+
+            return new AjaxResult
+            {
+                Id = userInsertResult.Data.ToString(),
+                Succeeded = userInsertResult.Succeeded,
+                Messages = userInsertResult.Messages
+            };
+        }
+    }
 }

@@ -1,15 +1,15 @@
 ﻿using AutoMapper;
-using Web.Application.Common.Mappings;
-using Web.Domain.Entities.Identity;
-using Web.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
-using Web.Application.Interfaces;
-using Web.Shared.Helpers;
-using Web.Application.Interfaces.Repositories.Identity;
+using System.ComponentModel.DataAnnotations;
+using Web.Application.Common.Mappings;
 using Web.Application.DTOs.MediatR;
+using Web.Application.Interfaces;
+using Web.Application.Interfaces.Repositories.Identity;
+using Web.Domain.Entities.Identity;
+using Web.Shared;
+using Web.Shared.Helpers;
 
 namespace Web.Application.Features.IdentityFeatures.Users.Commands
 {
@@ -54,6 +54,8 @@ namespace Web.Application.Features.IdentityFeatures.Users.Commands
 
         [DisplayName("Gắn với tài khoản News")]
         public int? MapNewsUserId { get; set; }
+        [DisplayName("Site")]
+        public int? SiteId { get; set; }
 
         [DisplayName("Gắn với tài khoản PodCast")]
         public string MapPodCastUserId { get; set; }
@@ -69,10 +71,10 @@ namespace Web.Application.Features.IdentityFeatures.Users.Commands
         private readonly IMapper _mapper;
         private readonly UserManager<User> _userManager;
         private readonly IRoleRepo _roleRepo;
-		private readonly IMediator _mediator;
-		private readonly ICurrentUserService _currentUserService;
+        private readonly IMediator _mediator;
+        private readonly ICurrentUserService _currentUserService;
 
-		public UserCreateCommandHandler(IMapper mapper, IRoleRepo roleRepo, UserManager<User> userManager, 
+        public UserCreateCommandHandler(IMapper mapper, IRoleRepo roleRepo, UserManager<User> userManager,
             IMediator mediator, ICurrentUserService currentUserService)
         {
             _mapper = mapper;
@@ -94,17 +96,17 @@ namespace Web.Application.Features.IdentityFeatures.Users.Commands
             PasswordHasher<User> passwordHasher = new PasswordHasher<User>();
             entity.PasswordHash = passwordHasher.HashPassword(entity, command.Password);
 
-			if (!string.IsNullOrWhiteSpace(command.BirthDay))
-			{
-				DateTime birthDayDb = command.BirthDay.ToDateTime();
+            if (!string.IsNullOrWhiteSpace(command.BirthDay))
+            {
+                DateTime birthDayDb = command.BirthDay.ToDateTime();
 
-				if (birthDayDb != DateTime.MinValue)
-				{
-					entity.BirthDay = birthDayDb;
-				}
-			}
+                if (birthDayDb != DateTime.MinValue)
+                {
+                    entity.BirthDay = birthDayDb;
+                }
+            }
 
-			IdentityResult identityResult = await _userManager.CreateAsync(entity);
+            IdentityResult identityResult = await _userManager.CreateAsync(entity);
 
             if (!identityResult.Succeeded)
             {
@@ -124,7 +126,7 @@ namespace Web.Application.Features.IdentityFeatures.Users.Commands
 
             //publish event
 
-			return await Result<int>.SuccessAsync(entity.Id, "Thêm dữ liệu thành công.");
+            return await Result<int>.SuccessAsync(entity.Id, "Thêm dữ liệu thành công.");
         }
     }
 }
